@@ -1,5 +1,5 @@
 // 사이트 기본 정보 (metadata, 헤더, 푸터에서 공유)
-// 서비스명은 PRD상 "결정 필요" 항목이며 현재 값은 임시값이다
+// 서비스명은 임시값이며 확정되면 변경한다
 export const siteConfig = {
   name: "Invoice Web",
   description: "노션으로 작성한 견적서를 링크 하나로 확인하고 PDF로 저장합니다.",

@@ -28,9 +28,9 @@ src/app/
 
 PRD(`docs/PRD.md`)에 따라 아래 구조가 구현 단계에서 추가될 예정입니다. 구현 전이므로 현재는 존재하지 않습니다.
 
-- `src/app/(invoice)/` 라우트 그룹: 견적서 열람 화면 (`/invoice/[token]`)
-- `src/components/invoice/`: 견적서 UI 블록 (Common 계층의 도메인 블록)
-- `src/lib/invoice/`, `src/lib/notion/`: 도메인 로직과 Notion 어댑터
+- `src/app/invoice/[id]/`: 견적서 조회 페이지 (`/invoice/[notionPageId]`)
+- `src/app/api/generate-pdf/`: PDF 생성 Route Handler
+- `src/lib/notion/`: Notion 클라이언트와 데이터 조회 (서버 전용)
 
 ## 규칙
 
@@ -42,7 +42,7 @@ PRD(`docs/PRD.md`)에 따라 아래 구조가 구현 단계에서 추가될 예�
 
 ## 스타터 정리 이력
 
-스타터킷의 문서·예제·앱 셸·로그인/회원가입 코드는 PRD D7 결정에 따라 삭제했습니다. 삭제된 영역은 다음과 같습니다.
+스타터킷의 문서·예제·앱 셸·로그인/회원가입 코드는 삭제했습니다. 삭제된 영역은 다음과 같습니다.
 
 - `src/app/(marketing)/docs`, `examples`, `login`, `signup`, `src/app/(app-shell)`
 - `src/components/docs`, `src/components/examples`, `AppSidebar`·`ShellHeader`·`Breadcrumbs`·`UserNav`

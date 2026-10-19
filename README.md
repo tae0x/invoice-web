@@ -44,7 +44,7 @@ http://localhost:3000 에서 확인할 수 있습니다.
 
 | 문서 | 내용 |
 | --- | --- |
-| [docs/PRD.md](docs/PRD.md) | MVP 요구사항, 데이터 모델, 라우트·기술 설계 |
+| [docs/PRD.md](docs/PRD.md) | MVP 기능 명세, 데이터 모델, 기술 스택, Notion 설정 가이드 |
 | [docs/architecture.md](docs/architecture.md) | 폴더 구조(`src/`), 컴포넌트 계층, 코드 규칙, 스타터 정리 이력 |
 | [docs/guide.md](docs/guide.md) | shadcn 컴포넌트, 다크모드·토스트 사용법, 환경 변수 |
 

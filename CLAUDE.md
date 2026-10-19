@@ -31,11 +31,11 @@ Next.js 16.4 / React 19.3이며 학습 데이터와 다른 API가 있다. 코드
 
 `config/site.ts`, `lib/utils.ts` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
 
-PRD(`docs/PRD.md`)에 정의된 `components/invoice/`, `lib/invoice/`, `lib/notion/`, `(invoice)` 라우트 그룹은 구현 전(예정)이다.
+PRD(`docs/PRD.md`)에 정의된 견적서 조회 페이지(`/invoice/[notionPageId]`)와 Notion 연동, PDF 생성은 구현 전(예정)이다.
 
 ### 라우트 그룹
 
-- `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 현재 서비스 안내 홈(`/`)만 있다. 스타터의 docs·examples·app-shell·로그인/회원가입은 삭제했다 (PRD D7).
+- `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 현재 서비스 안내 홈(`/`)만 있다. 스타터의 docs·examples·app-shell·로그인/회원가입은 삭제했다.
 
 ### `config/site.ts`가 사이트 정보의 단일 출처
 

@@ -39,4 +39,4 @@ toast.success("저장되었습니다.");
 | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | 사이트 URL (metadata 절대 경로 기준) |
 
-Notion 연동에 필요한 변수는 구현 단계에서 `.env.example`과 함께 이 표에 추가합니다(목록은 `docs/PRD.md` 8.3 참고).
+Notion 연동에 필요한 변수(`NOTION_API_KEY`, `NOTION_DATABASE_ID`)는 구현 단계에서 `.env.example`과 함께 이 표에 추가합니다(`docs/PRD.md`의 "Notion API 설정 가이드" 참고).
