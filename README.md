@@ -2,7 +2,7 @@
 
 노션 데이터베이스에 저장된 견적서를 웹에서 조회·관리하는 것을 목표로 합니다.
 
-> **진행 상황**: 현재는 Next.js 16 스타터킷(레이아웃, 다크모드, 폼 검증, 전역 상태) 위에 기본 골격을 갖춘 단계입니다. 노션 연동과 견적서 기능은 구현 예정입니다.
+> **진행 상황**: 스타터킷의 문서·예제·로그인 코드를 정리하고 기본 골격(레이아웃, 다크모드, 안내 홈)만 남긴 초기화 단계입니다. 노션 연동과 견적서 기능은 구현 예정입니다. 요구사항은 [docs/PRD.md](docs/PRD.md)를 참고하세요.
 
 ## 기술 스택
 
@@ -13,9 +13,7 @@
 | 스타일 | Tailwind CSS 4, shadcn/ui (`base-nova`, Base UI 기반) |
 | 아이콘 | lucide-react |
 | 다크모드 | next-themes |
-| 폼 / 검증 | react-hook-form, zod, @hookform/resolvers |
-| 전역 상태 | zustand |
-| 범용 훅 | usehooks-ts |
+| 검증 | zod (도메인 스키마용, 구현 예정) |
 | 토스트 | sonner |
 | 데이터 소스 | Notion (연동 예정) |
 
@@ -42,12 +40,13 @@ http://localhost:3000 에서 확인할 수 있습니다.
 
 ## 문서
 
-상세 내용은 `docs/` 폴더에 있습니다. 개발 서버에서는 `/docs`, `/examples` 경로에서도 볼 수 있습니다.
+상세 내용은 `docs/` 폴더에 있습니다.
 
 | 문서 | 내용 |
 | --- | --- |
-| [docs/architecture.md](docs/architecture.md) | 폴더 구조(`src/`), 컴포넌트 계층, 코드 규칙, 문서·예제 삭제 방법 |
-| [docs/guide.md](docs/guide.md) | shadcn 컴포넌트, 다크모드·토스트·폼·전역 상태·훅 사용법, 환경 변수 |
+| [docs/PRD.md](docs/PRD.md) | MVP 요구사항, 데이터 모델, 라우트·기술 설계 |
+| [docs/architecture.md](docs/architecture.md) | 폴더 구조(`src/`), 컴포넌트 계층, 코드 규칙, 스타터 정리 이력 |
+| [docs/guide.md](docs/guide.md) | shadcn 컴포넌트, 다크모드·토스트 사용법, 환경 변수 |
 
 ## Claude Code 설정
 

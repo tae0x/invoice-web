@@ -25,30 +25,25 @@ Next.js 16.4 / React 19.3이며 학습 데이터와 다른 API가 있다. 코드
 
 ### 폴더가 곧 계층 (`docs/architecture.md`에도 정의됨)
 
-소스는 모두 `src/` 아래에 있다 (`src/app`, `src/components`, `src/config`, `src/hooks`, `src/lib`, `src/stores`). 이 문서의 소스 경로 표기는 `src/`를 생략한다 (루트 설정 파일이 가리키는 경로만 `src/`를 명시). `public/`, 설정 파일, `CLAUDE.md`·`AGENTS.md`·`README.md`는 루트에 있고, 상세 문서는 `docs/`에 있다.
+소스는 모두 `src/` 아래에 있다 (`src/app`, `src/components`, `src/config`, `src/lib`). 이 문서의 소스 경로 표기는 `src/`를 생략한다 (루트 설정 파일이 가리키는 경로만 `src/`를 명시). `public/`, 설정 파일, `CLAUDE.md`·`AGENTS.md`·`README.md`는 루트에 있고, 상세 문서는 `docs/`에 있다.
 
 의존 방향은 아래에서 위로만 간다. 상위 계층만 하위 계층을 import 한다.
 
-`config/site.ts`, `stores/`, `hooks/`, `lib/utils.ts` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
+`config/site.ts`, `lib/utils.ts` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
 
-`components/docs/`, `components/examples/`는 문서·예제 페이지 전용이다. 기본 계층 밖의 데모 코드이므로 `app/` 하위의 docs·examples 페이지에서만 import 한다.
+PRD(`docs/PRD.md`)에 정의된 `components/invoice/`, `lib/invoice/`, `lib/notion/`, `(invoice)` 라우트 그룹은 구현 전(예정)이다.
 
-### 라우트 그룹 2개
+### 라우트 그룹
 
-- `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 랜딩, `/login`, `/signup`, `/docs/*`, `/examples/*`가 여기에 속한다. `docs/layout.tsx`는 좌측 내비게이션과 이전/다음 링크가 추가된 중첩 레이아웃이다.
-- `app/(app-shell)/examples/sidebar-layout/` — `SidebarProvider` + `AppSidebar` + `ShellHeader` 앱형 레이아웃. 마케팅 레이아웃과 별개로 동작한다.
+- `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 현재 서비스 안내 홈(`/`)만 있다. 스타터의 docs·examples·app-shell·로그인/회원가입은 삭제했다 (PRD D7).
 
-`/examples/*` URL은 두 그룹에 걸쳐 있다. 목록(`/examples`)과 `components`·`forms`·`hooks`·`layouts`는 marketing, `/examples/sidebar-layout`만 app-shell이다.
+### `config/site.ts`가 사이트 정보의 단일 출처
 
-### `config/site.ts`가 네비게이션의 단일 출처
-
-`mainNav`, `docsNav`, `examplesNav`, `shellNav`, `routeLabels`가 모두 여기에 있다. 페이지를 추가하거나 지우면 이 파일을 함께 수정해야 한다.
-- `docsNav`의 순서가 곧 `DocPager`의 이전/다음 문서 순서다 (`docsPages`로 평탄화됨).
-- `Breadcrumbs`는 경로 세그먼트를 `routeLabels`로 변환한다. 라벨이 없으면 세그먼트 원문이 노출된다.
+`siteConfig`(이름·설명·URL)가 여기에 있다. 내비게이션 항목이 필요해지면 이 파일에 추가한다.
 
 ### shadcn/ui는 Base UI 기반 (`base-nova`)
 
-Radix가 아니므로 `asChild`가 없다. 대신 `render` prop을 쓴다. 링크 버튼은 `<Button render={<Link href="..." />} nativeButton={false}>` 형태다. `DialogTrigger`, `BreadcrumbLink` 등 트리거·링크 계열 컴포넌트도 같은 방식이다. `components/ui`는 CLI로 추가한 원본이므로 직접 수정을 최소화한다.
+Radix가 아니므로 `asChild`가 없다. 대신 `render` prop을 쓴다. 링크 버튼은 `<Button render={<Link href="..." />} nativeButton={false}>` 형태다. `DropdownMenuTrigger` 등 트리거·링크 계열 컴포넌트도 같은 방식이다. `components/ui`는 CLI로 추가한 원본이므로 직접 수정을 최소화한다.
 
 ### 클래스 병합과 경로
 
@@ -62,14 +57,11 @@ Radix가 아니므로 `asChild`가 없다. 대신 `render` prop을 쓴다. 링�
 
 ### 클라이언트/서버 경계
 
-- 서버 컴포넌트가 기본이며 `"use client"`는 말단에만 쓴다. 현재 경로가 필요한 컴포넌트(`MainNav`, `DocsNav`, `DocPager`, `Breadcrumbs`, `AppSidebar`)는 `usePathname`을 쓰는 클라이언트 컴포넌트다.
-- zustand 스토어(`stores/`)는 클라이언트 컴포넌트에서만 import 한다.
-- `usehooks-ts`의 `useLocalStorage`, `useMediaQuery` 등은 hydration 불일치를 막기 위해 `initializeWithValue: false`를 쓴다 (`hooks/use-mobile.ts`, `settings-form.tsx` 참고).
+- 서버 컴포넌트가 기본이며 `"use client"`는 말단에만 쓴다. 현재 경로가 필요한 컴포넌트는 `usePathname`을 쓰는 클라이언트 컴포넌트로 만든다.
 - `ThemeProvider`(next-themes, class 방식), `TooltipProvider`, `Toaster`(sonner)는 `app/layout.tsx`에 한 번만 둔다. 하위에서 중복 선언하지 않는다. `<html>`에는 `suppressHydrationWarning`이 필요하고, 다크 변형은 `globals.css`의 `@custom-variant dark`와 연결된다.
 
-### 폼, 타입, 메타데이터
+### 타입, 메타데이터
 
-- 폼은 react-hook-form + `zodResolver`(zod v4) + shadcn `Field` 조합이다. 기준 예제는 `app/(marketing)/login/login-form.tsx`(간단한 카드 폼)와 `components/examples/signup-form.tsx`(모든 입력 유형 데모). `/signup` 전용 폼은 `app/(marketing)/signup/signup-form.tsx`로, 이름이 같은 `SignupForm`이 두 곳에 있으니 import 경로에 주의한다.
 - 레이아웃의 props 타입은 전역 헬퍼 `LayoutProps<"/경로">`를 쓴다 (`app/layout.tsx` 참고).
 - 페이지의 `metadata`는 `title`만 지정한다. 루트 `layout.tsx`의 title template이 `%s | 사이트명`으로 완성한다.
 
