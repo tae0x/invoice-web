@@ -3,7 +3,7 @@
 노션에서 작성한 견적서를 고유 링크 하나로 웹에서 확인하고 PDF로 저장하게 하는 MVP를 완성합니다.
 
 **📅 최종 업데이트**: 2026-10-25
-**📊 진행 상황**: Phase 3 완료, Phase 4 대기 중 (11/14 Tasks 완료, 79%). Task 009의 일부 확인(노션 값 수정 후 반영, 항목 0개·빈 속성·26개 이상·긴 값 실데이터)은 해당 견적서를 노션에 만든 뒤 진행
+**📊 진행 상황**: Phase 3 완료, Phase 4 진행 중 (12/13 Tasks 완료, 92%. Task 014는 범위에서 제외). Task 009의 일부 확인(노션 값 수정 후 반영, 항목 0개·빈 속성·26개 이상·긴 값 실데이터)은 해당 견적서를 노션에 만든 뒤 진행
 
 ## 개요
 
@@ -55,6 +55,7 @@ Phase 3 트랙 A(Task 007~008, 노션 API)에서 완료된 것:
 - Next.js 16.4.3 보안 업데이트 (`next`·`eslint-config-next` 16.4.3 고정, `npm audit --omit=dev` 0건)
 - 환경·클라이언트 (Task 007): `src/lib/notion/env.ts`(zod, 첫 호출 시 지연 검증, 오류 메시지에 변수 이름만), `client.ts`(`server-only` 싱글턴, 타임아웃 10초·SDK 재시도, 로그는 코드만). `server-only` 패키지 설치
 - 조회 로직 (Task 008): `src/lib/notion/mappers.ts`(속성 존재·`type`을 런타임에 확인), `invoices.ts`의 `getInvoice(pageId): Promise<Invoice | null>`(`React.cache`, 요청 간 캐시 없음)
+- 화면용 60초 캐시 (Task 012-4, D8 수정): `invoices.ts`의 `getCachedInvoice`(`use cache` + `cacheLife`)를 견적서 페이지·`generateMetadata`가 쓰고, PDF API는 캐시 없는 `getInvoice`를 쓴다. 서버 로거 `src/lib/logger.ts`(012-5), PDF API 호출 빈도 제한 `src/lib/pdf/rate-limit.ts`(012-2, 012-6 보강)
 - 노션 요청 수(실측): 정상 견적서는 서버 기동 후 첫 조회 3회(페이지·Invoices 데이터 소스 스키마·항목 쿼리), 이후 2회(스키마의 Items 데이터 소스 ID를 모듈 메모리에 재사용). 항목 0개면 1회, 형식이 틀린 ID는 0회
 - `src/proxy.ts`(D12): 형식이 틀린 ID는 정적 404 라우트 `src/app/invoice/invalid-id/`로 `status: 404`와 함께 rewrite (개발·프로덕션 모두 HTTP 404, URL 유지). `guide`, 형식이 맞는 ID는 통과 (더미용 `test-N` 예외는 Task 009에서 제거해 `/invoice/test-1`은 HTTP 404)
 - 견적서 404 화면의 탭 제목(`metadata` + React `<title>`)과 `noindex`(Next.js 자동 주입)
@@ -102,7 +103,7 @@ PRD에서 정해지지 않았거나 서로 맞지 않던 항목을 프로젝트 
 | D5 | F010 URL 생성 주체 | 노션 수식 속성이 만든다: `"<사이트 URL>/invoice/" + id()`. 앱은 URL 형식(하이픈 포함·미포함 ID)만 처리하고 별도 생성 기능을 만들지 않는다 | PRD가 관련 페이지를 "노션 (외부 시스템)"으로 정의한다 | 011 |
 | D6 | 총 금액·통화·VAT | 노션 `총 금액` Number 값을 그대로 표시한다. 통화는 원(KRW)이고 VAT는 별도 표기하지 않는다(입력 값이 최종 금액). 항목의 `금액`은 항목 행 표시용이다 | PRD 데이터 모델의 출처를 따른다. 합계 불일치 검증은 MVP 범위 밖이며 발행자가 노션에서 관리한다 | 003, 004, 008 |
 | D7 | 발행자(회사) 정보 | `src/config/site.ts`에 상수로 두고 화면과 PDF가 공통으로 쓴다. 상호·이메일만 `siteConfig.issuer`에 둔다 | `site.ts`가 사이트 정보의 단일 출처다. 노션 DB에 속성을 추가하지 않는다 | 004, 006 |
-| D8 | 데이터 캐싱 | 캐시하지 않고 매 요청 조회한다. 동적 `params`와 조회는 Suspense 경계 안에 둔다. 요청 수가 문제되면 Task 012에서 `use cache` + 짧은 `cacheLife`를 재검토한다 | PRD가 "실시간 조회"를 요구하고 노션 수정이 즉시 반영돼야 한다. 견적서 1건 조회는 Notion 요청 제한(평균 초당 3회)에 여유가 있다 | 008, 009, 012 |
+| D8 | 데이터 캐싱 | 견적서 화면(페이지 본문·`generateMetadata`)의 노션 조회는 `use cache` + `cacheLife({ stale: 30, revalidate: 60, expire: 61 })`로 60초 캐싱한다(`getCachedInvoice`). 노션 수정은 화면에 최대 60초 늦게 반영된다. PDF API는 D2 때문에 캐시 없는 `getInvoice`를 계속 써서 항상 최신이며, 그 결과 노션 수정 뒤 최대 60초 동안 화면과 PDF의 값이 다를 수 있다. 동적 `params`와 조회는 Suspense 경계 안에 둔다. 오류(throw)는 캐시되지 않고, 없는 견적서(null)는 값으로 60초 저장된다 | PRD의 "실시간 조회"는 "요청 시점에 노션에서 읽는다"(정적 생성 아님)로 해석하고, 사용자가 허용한 최대 지연을 60초로 정했다(012-4). 같은 링크가 반복 열릴 때 노션 호출(견적서 1건 2~3회)과 응답 시간(0.6~1.0초)을 줄이고, 노션 제한(평균 초당 3회)에 대한 여유를 늘린다. 한계: 기본 인메모리 캐시라 서버리스(Vercel)에서는 인스턴스마다 따로이며 재사용이 보장되지 않는다. 보장이 필요하면 `use cache: remote`를 사용자 결정으로 검토한다 | 008, 009, 012 |
 | D9 | 접근 범위 검증 | 조회한 페이지의 부모 DB가 `NOTION_DATABASE_ID`와 일치할 때만 표시한다. 항목 DB ID 환경 변수는 추가하지 않는다(Items 데이터 소스 ID는 Invoices 데이터 소스 스키마의 `항목` Relation 설정에서 읽는다). 페이지 부모는 `{ type: "data_source_id", data_source_id, database_id }` 형태이며 `parent.database_id`를 비교한다(Task 007·008에서 확인) | Integration에 공유된 다른 노션 페이지가 URL 추측으로 노출되는 것을 막는다 | 007, 008 |
 | D10 | 라우트 위치·세그먼트명 | `src/app/invoice/[notionPageId]/`에 두고 `(marketing)` 그룹 밖의 독립 레이아웃(`src/app/invoice/layout.tsx`, 마케팅 헤더·푸터 없음)을 쓴다 | 클라이언트가 링크로 여는 문서형 화면이라 서비스 내비게이션이 필요 없다. URL 파라미터 이름을 PRD의 `notionPageId`와 맞춘다 | 002 |
 | D11 | 노션 페이지 본문(블록) | 사용하지 않는다(`blocks.children.list` 호출 없음) | 데이터 모델이 속성과 Relation만 쓴다. 요청 수도 줄어든다 | 008 |
@@ -216,7 +217,7 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
   - ✅ 항목 0개일 때의 빈 상태 표시 (`empty` 컴포넌트)
   - ✅ 시맨틱 색상 토큰만 사용 (다크 모드 대응), 콘텐츠 폭은 `Container` 사용
   - ✅ 서버 컴포넌트로 작성하고 상호작용 요소만 `"use client"` 말단 컴포넌트로 분리
-  - ✅ 컴포넌트 위치는 `docs/architecture.md` 계층 규칙을 따르며, 견적서 전용 컴포넌트를 둘 위치(라우트 폴더 내 비공개 폴더 또는 `src/components` 하위 신규 폴더)를 착수 시 정하고 Task 014에서 문서에 반영
+  - ✅ 컴포넌트 위치는 `docs/architecture.md` 계층 규칙을 따르며, 견적서 전용 컴포넌트를 둘 위치(라우트 폴더 내 비공개 폴더 또는 `src/components` 하위 신규 폴더)를 착수 시 정함 (라우트 내 `_components/`로 결정, `docs/architecture.md`에 반영됨)
   - ✅ 수락 기준: 더미 데이터로 모든 필드가 표시되고 375px/768px/1280px 폭에서 가로 넘침 없음
 
 - **Task 005: 견적서 404·로딩·에러 상태 UI 구현 (F011, F012)** ✅ - 완료
@@ -316,28 +317,89 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
 
 ### Phase 4: 최적화 및 배포
 
-- **Task 012: 성능·접근성 점검 및 개선**
+- **Task 012: 성능·접근성 점검 및 개선** ✅ - 완료
   - 크기: S / 의존: Task 009~011
-  - 견적서 1건 조회당 Notion API 요청 수 측정과 불필요한 중복 조회 제거 (페이지와 메타데이터, PDF API 간 재사용)
-  - PDF 생성 시간과 폰트 파일 크기 점검 (D1 결과에 따라)
-  - 접근성: 표 머리글, 버튼 레이블, 색 대비, 키보드 조작 점검
-  - 수락 기준: 점검 결과와 개선 내역이 기록되고 `npm run build` 통과
+  - ✅ 012-1 노션 요청 수·중복 조회 점검 (2026-10-25, 프로덕션 빌드 서버에서 `NODE_OPTIONS --require`로 `fetch`를 감싸 `api.notion.com` 호출을 셌다. 프로젝트 소스는 수정하지 않았고 계측 스크립트는 scratchpad에만 있다)
+    - 실측(견적서 INV-2026-001, 항목 3개): 페이지 첫 접속 3회(`pages.retrieve`, Invoices 데이터 소스 스키마, Items 쿼리), 같은 서버의 두 번째 접속 2회(스키마의 Items 데이터 소스 ID를 모듈 메모리에서 재사용). 노션 호출 하나당 약 0.2~0.5초, 페이지 응답 0.6~1.0초
+    - 페이지 본문과 `generateMetadata`는 `React.cache`로 합쳐져 추가 호출이 없다(첫 접속 3회에 메타데이터 호출이 포함됨)
+    - PDF API(`POST /api/generate-pdf`)는 D2에 따라 페이지와 별도로 재조회한다: 호출당 2회(`pages.retrieve` + Items 쿼리). 페이지 접속 뒤 PDF를 받으면 노션을 총 2회 더 부른다. 이는 의도한 동작이다(클라이언트 값을 신뢰하지 않음)
+    - 참고: 스키마(Items 데이터 소스 ID) 메모리는 라우트 번들마다 따로 만들어져, 서버 기동 뒤 PDF API의 첫 호출은 페이지와 별개로 3회다(이후 2회). 서버리스에서는 인스턴스가 새로 뜰 때마다 같다
+    - 결론: 불필요한 중복 조회는 없어 `getInvoice`를 수정하지 않았다. 항목이 있는 견적서 1건을 보고 PDF를 받는 흐름의 노션 요청은 3~6회로, 노션 제한(평균 초당 3회)에 여유가 있다
+    - D8 재검토 제안(구현하지 않음): 현재 규모(견적서 1건 = 2~3회)에서는 캐시가 필요하지 않다. 같은 링크가 짧은 시간에 반복 열리는 경우를 줄이려면 `getInvoice`에 `use cache` + `cacheLife({ revalidate: 30 })` 같은 짧은 캐시를 둘 수 있지만, 노션 수정이 최대 그 시간만큼 늦게 보이고 PDF API(D2, 최신 금액 보장)는 캐시를 쓰지 않게 분리해야 한다. 노션 429가 실제로 관찰되거나 트래픽이 늘면 사용자가 결정한다 → 사용자 요청으로 012-4에서 60초 캐시를 적용했다(D8 수정)
+  - ✅ 012-2 PDF API 보호와 성능 기록 (2026-10-25)
+    - 결정: 인메모리 호출 빈도 제한을 추가했다(`src/lib/pdf/rate-limit.ts`, 고정 윈도우). 이유: API가 인증 없는 공개 엔드포인트이고 호출 1번이 노션 2~3회 요청과 PDF 렌더링 CPU를 쓴다. 반복 호출이 노션 제한(평균 초당 3회)을 소진하면 견적서 조회까지 실패한다
+    - 규칙: 클라이언트 IP(`x-forwarded-for` 첫 값 → `x-real-ip` → 없으면 `unknown` 공용 버킷)당 60초에 10회(`x-forwarded-for`는 Vercel이 직접 설정하는 값이라 신뢰한다. 다른 호스팅으로 옮기면 신뢰할 프록시 기준으로 `getClientKey`를 바꿔야 하고, 그렇지 않으면 클라이언트가 헤더를 위조해 제한을 피할 수 있다). 초과 시 `429` + `Retry-After`(남은 초) + `GeneratePdfErrorResponse` 일반 문장. 본문 읽기·노션 조회 전에 검사한다. 정상 사용(생성 중 재클릭은 버튼이 막음)으로는 닿기 어려운 값이다
+    - 한계: 외부 저장소를 쓰지 않아 서버리스 인스턴스끼리 카운터를 공유하지 않는다(인스턴스가 여럿이면 실제 허용량은 인스턴스 수 × 10회, 콜드 스타트 때 초기화). 분산 공격을 막는 장치가 아니라 단일 클라이언트의 반복 호출을 줄이는 최소 방어다. 더 필요하면 Vercel Firewall 속도 제한이나 외부 저장소(Upstash 등)를 사용자 결정으로 검토한다. IP 헤더가 없는 환경(로컬)은 모두 한 버킷이다
+    - proxy `matcher`는 넓히지 않았다(Route Handler 안에서 검사). 그래서 `/invoice/:path*`의 ID 검사에 영향이 없다
+    - 버튼: 429를 받으면 "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." 토스트를 보여 준다(그 밖의 실패는 기존 문구)
+    - 확인(프로덕션 서버): 연속 11회 호출에서 1~10번째 200, 11번째 429(`retry-after: 54`, 본문 일반 문장, `cache-control: no-store`). 제한 상태에서 다운로드 버튼 클릭 시 토스트 표시와 콘솔의 429 리소스 로그만 확인, 페이지 표시는 유지
+    - 측정(INV-2026-001, 항목 3개, 프로덕션 서버, 로컬→노션): PDF API 응답 0.5~1.0초(첫 호출 약 1.0초, 이후 0.5~0.65초), 응답 14,671B. 노션 호출 합계(2~3회)가 0.5~0.85초이므로 PDF 렌더링은 약 20~150ms(첫 호출에 폰트 파일 읽기 포함). 더미 40항목은 Task 010에서 7~60ms
+    - 폰트: `src/lib/pdf/fonts/` TTF 2종 6,222,712B + 6,224,868B = 12,447,580B(약 12.4MB). PDF에는 사용한 글리프만 서브셋으로 들어가 결과 파일은 수십 KB다. 서버리스 함수 번들 용량(250MB 비압축 한도 등)에는 여유가 있으나 Vercel 배포 시 함수 크기는 Task 013에서 확인한다
+    - 노션 재시도 포함 최악 응답 시간(코드 분석, 실측 아님): 요청 1회 타임아웃 10초. 타임아웃은 SDK가 재시도하지 않고, 429·529는 모든 메서드에서, 500·503은 GET에서만 최대 2회 재시도하며 재시도 대기는 최대 5초다. 한 호출이 `429` 응답 두 번(대기 각 5초) 뒤 타임아웃되면 약 20초이고, 호출은 순차(페이지 → 스키마 → 항목 쿼리)이므로 PDF API·견적서 페이지 모두 최악 약 40초(스키마 호출이 있는 첫 조회는 약 60초), 항목 100개 초과 시 페이지당 추가. 통상은 1초 안팎이다. 배포 함수 최대 실행 시간 확인은 Task 013에서 한다
+  - ✅ 012-3 접근성 점검 및 개선 (2026-10-25, 프로덕션 빌드 서버 + Playwright MCP, 실측)
+    - 점검 결과: 표 머리글 `th`에 `scope`가 없었음(암묵적 `columnheader` 역할은 있음) → 수정 / 버튼 레이블 이상 없음(`PDF 다운로드`, `다시 시도`, `테마 변경`, 생성 중 `aria-busy`, 아이콘 `aria-hidden`) / 색 대비는 라이트에서 `총 금액` 레이블(`text-muted-foreground` on `bg-muted`)만 4.35:1로 기준(4.5:1) 미달 → 수정, 나머지 최저 4.74:1 / 다크 최저 7.66:1 / 키보드: 견적서 화면의 탭 정지점은 다운로드 버튼 1개(다음 Tab은 페이지 밖), 포커스 표시(`focus-visible` 링)는 나타남 / 에러 화면은 `다시 시도`로 포커스가 가고 Enter로 재시도(노션 재조회, 잘못된 키라 같은 에러 화면 유지), 화면·HTML에 내부 오류 문자열 없음
+    - 수정: `invoice-items-table.tsx`의 `TableHead` 4개에 `scope="col"`, `invoice-summary.tsx`의 `총 금액` 레이블을 본문색(`text-foreground` 기본값)으로 변경(대비 14.5:1 이상). `components/ui`와 토큰은 수정하지 않음
+    - 다크 모드: 견적서 화면에는 테마 토글이 없어(D10) 안내 페이지(`/invoice/guide`) 헤더에서 토글을 클릭해 다크로 바꾼 뒤 견적서 화면으로 이동해 확인(`next-themes`가 저장한 값 사용, 확인 뒤 저장값 삭제)
+    - 미수정 제안: ① `--ring`(라이트 `oklch(0.708 0 0)`)의 포커스 링은 흰 배경 대비 약 2.8:1로 비텍스트 대비 3:1(WCAG 1.4.11)에 약간 못 미침. 전역 토큰이라 영향 범위가 커서 사용자 결정으로 남김 ② 에러 화면에서 `다시 시도` 후 컴포넌트가 다시 마운트되어 포커스가 `body`로 돌아감(키보드 사용자는 다시 Tab 필요)
+  - ✅ 012-4 노션 조회 60초 캐싱 (2026-10-25, D8 수정)
+    - 구현: `getCachedInvoice(pageId)`(`src/lib/notion/invoices.ts`)가 ID를 캐시 밖에서 zod로 정규화한 뒤 `'use cache'` 함수 `readInvoiceWithCache(정규화된 ID)`를 부르고, 안에서 기존 `getInvoice`를 재사용한다(조회 로직 중복 없음). 바깥은 `React.cache`라 페이지 본문과 `generateMetadata`의 같은 요청 내 중복 호출도 합친다. 페이지·`generateMetadata`만 이 함수를 쓰고 PDF API(`route.tsx`)는 D2에 따라 캐시 없는 `getInvoice`를 그대로 쓴다
+    - 문서 확인 결과: (a) 인자는 직렬화 가능한 값이면 되고 캐시 키가 `빌드 ID + 함수 ID + 인자`라 정규화된 ID 문자열 하나만 넘긴다(하이픈·대문자만 다른 URL이 같은 항목을 쓴다). (b) `use cache` 안의 throw는 캐시에 저장되지 않는다(실측: 잘못된 키로 3번 접속하면 노션을 3번 호출, 에러 화면 유지). (c) 반환값 `null`은 값이라 같은 시간 동안 저장된다(실측: 없는 ID 2번째 접속에서 노션 호출 0회, 404 화면). (d) 동적 `params` 접근과 조회는 그대로 `<Suspense>` 안이라 빌드에서 `/invoice/[notionPageId]` ◐ 유지, prerender 오류 없음. (e) `cacheLife`의 `revalidate`는 그 시간이 지난 뒤 첫 요청에 오래된 값을 주고 뒤에서 갱신하며, `expire` 기본값은 "만료 없음"이다. 그래서 `expire`를 `revalidate`(60)보다 큰 최소값 61로 두어 61초 뒤부터는 새로 조회해 기다리게 했다
+    - 프로필: `{ stale: 30, revalidate: 60, expire: 61 }`(`INVOICE_CACHE_LIFE`). `stale`은 브라우저 라우터 캐시 시간으로 기본 5분이 클라이언트 이동에서 값을 더 묵히므로 Next.js 최소값 30초로 줄였다. `expire`가 5분 미만이라 이 캐시는 정적 셸이 아니라 요청 시점에 채워지는 영역이다(원래 동적 `params`라 정적 셸에 들어갈 수 없었음)
+    - 캐시 내용: 도메인 객체(`Invoice`) 또는 `null`뿐이다. API 키·노션 응답 원본은 들어가지 않는다
+    - 실측(프로덕션 서버, `NODE_OPTIONS --require`로 `fetch`를 감싼 scratchpad 스크립트, 프로젝트 소스 수정 없음, 노션 데이터 수정 없음): 서버 기동 후 첫 접속 노션 3회 → 이어진 재접속 0회(하이픈 포함·대문자 ID 포함 3번 모두 0회, 응답 약 10ms) → PDF API 첫 호출 3회·두 번째 2회(캐시 미사용 확인) → 62초 뒤 재접속 2회(동기 재조회, 응답 0.59초) → 곧바로 재접속 0회. 없는 ID: 첫 접속 1회, 재접속 0회
+    - 영향: 노션 수정은 화면에 최대 60초 늦게 반영된다. PDF는 항상 최신이라 수정 직후 최대 60초 동안 화면과 PDF가 다를 수 있다. PRD의 "실시간 조회"는 "요청 시점에 노션에서 읽는다"로 해석하고 허용 지연을 60초로 했다(D8). 안내는 `docs/notion-setup.md` 4절
+    - 한계: 기본 인메모리 캐시라 Vercel 서버리스에서는 인스턴스마다 캐시가 따로이고 요청 간 재사용이 보장되지 않는다(문서 "Runtime caching considerations"). 이 경우에도 반영 지연은 60초를 넘지 않고 호출 수 절감만 줄어든다. 재사용을 보장하려면 `use cache: remote`(플랫폼 캐시 핸들러, 비용·지연 있음)를 사용자 결정으로 검토한다. 이 점은 Task 013 배포 환경에서 실측한다
+    - 아직 못 한 확인: 노션 값을 실제로 수정해 반영 지연을 보는 것(사용자 데이터라 수정하지 않았고 호출 수 측정으로 대체)
+  - ✅ 012-5 서버 로깅 (2026-10-25)
+    - `src/lib/logger.ts`(`server-only`, 외부 의존 없음): `logger.info/warn/error(event, fields)`가 `{...fields, level, event}`를 JSON 한 줄로 `console.info/warn/error`에 출력한다. `fields` 값은 `string | number | boolean | undefined`만 받는다(객체·에러 인스턴스는 타입 오류, `undefined`는 출력에서 빠짐). 시각은 넣지 않는다(로그 수집 쪽이 찍음). `describeError(error)`는 에러에서 이름·문자열/숫자 `code`·숫자 `status`만 뽑는다(메시지·스택 제외)
+    - 교체한 서버 로그: `notion.invoice_fetch_failed {code, status}`(노션 조회 실패, `invoices.ts`), `notion.database_id_looks_like_data_source_id {hint}`(설정 오류 안내), `notion.sdk_log {sdkLevel, code, attempt, requestId}`(SDK 재시도·경고, `client.ts`. SDK 메시지 문자열은 버림), `pdf.generate_failed {errorName, errorCode, errorStatus}`(`route.tsx`), `pdf.rate_limited {retryAfterSeconds}`(429, 클라이언트 IP 제외)
+    - 그대로 둔 것: 클라이언트 컴포넌트의 `console.error`(`src/app/error.tsx`, 견적서 `error.tsx`, `download-pdf-button.tsx`)와 Next.js가 `error.tsx` 렌더 때 서버 로그에 남기는 오류+digest 출력
+    - 확인(프로덕션 서버, 잘못된 API 키를 프로세스 환경 변수로 덮어씀, 429까지 유발): 위 이벤트가 JSON 한 줄로 찍히고, 서버 로그 전체에서 API 키 문자열·테스트용 `x-forwarded-for` IP 검색 0건. 클라이언트 컴포넌트(`download-pdf-button.tsx`)에 임시로 `logger`를 import하면 `server-only` 때문에 `next build`가 실패함을 확인하고 원복했다
+    - 참고(범위 밖, 변경 없음): Next.js 자체 오류 출력(`⨯ Error [NotionRequestError] ...`)에는 우리 오류 메시지(코드·상태만)와 digest가 남는다
+  - ✅ 012-6 Rate limiting 점검과 보강 (2026-10-25)
+    - 점검: 012-2의 고정 윈도우 방식(IP당 60초 10회, 429 + `Retry-After`)은 유지한다. 임계값은 정상 사용(버튼 클릭, 생성 중 재클릭 차단)에 닿지 않고 PDF 1건당 노션 2~3회 호출을 고려하면 IP당 분당 최대 약 30회 이내로 노션 제한(평균 초당 3회)을 혼자 소진하지 못하는 값이라 바꾸지 않았다. 헤더는 `Retry-After`(초, 올림, 최소 1)와 `Cache-Control: no-store`로 충분해 `RateLimit-*` 헤더는 더하지 않았다
+    - 문제 발견·수정: 만료 항목 정리가 "버킷 500개 이상일 때만" 실행돼, 그보다 적게 쌓인 만료 항목은 남았고 정리 시점에 모든 항목이 유효하면(헤더를 바꿔 IP를 계속 바꿔 보내는 경우 등) 상한이 없었다. 이제 윈도우(60초)마다 한 번, 또는 버킷이 상한 5,000개에 닿으면 즉시 만료 항목을 지우고, 그래도 상한이면 먼저 들어온 버킷부터 지운다(`sweepBuckets`)
+    - 429 로그 연결: `pdf.rate_limited`(012-5 logger, IP 없음)
+    - 확인(프로덕션 서버, 노션을 부르지 못하는 잘못된 키 환경): 같은 IP로 연속 11회 호출에서 1~10번째는 처리(키가 잘못돼 500), 11번째 429, 서버 로그에 `pdf.rate_limited {retryAfterSeconds:54}` 1줄. 정상 키 환경의 200 → 429 흐름은 012-2에서 확인했다. 정리 로직(`sweepBuckets`)은 단위 테스트 러너가 없어 코드 검토로만 확인했고, 5,000개 상한 동작은 실행해 보지 않았다
+    - 한계와 대안(기록): 인메모리라 서버리스 인스턴스끼리 카운터를 공유하지 않고 콜드 스타트 때 초기화되어 실제 허용량은 인스턴스 수 × 10회다. 대안은 Vercel Firewall(WAF)의 속도 제한 규칙(대시보드 설정, 인스턴스 공유, 코드 변경 없음, 요금제별 제공 범위 확인 필요)이며 외부 저장소(Upstash 등)는 MVP에서 도입하지 않는다. 배포 후 필요하면 Task 013에서 Firewall 규칙(`/api/generate-pdf` POST)을 사용자 결정으로 설정한다
+    - 견적서 조회 페이지에는 별도 제한을 두지 않는다: 60초 캐시(012-4)로 같은 견적서를 반복해 열어도 캐시 적중 시 노션을 부르지 않고, 인스턴스마다 캐시가 따로여도 호출은 인스턴스·견적서당 분당 약 1회로 줄어든다. 견적서 ID는 추측할 수 없는 32자리 값이며 존재하지 않는 ID도 `null`이 캐시된다. 형식이 틀린 ID는 `proxy.ts`가 노션을 부르기 전에 거른다. 응답이 빠르고 인증 없는 공개 페이지라 제한이 오히려 정상 접속을 막을 위험이 더 크다
+  - ✅ 012-7 웹폰트 최적화 (2026-10-25, 프로덕션 빌드 서버 + Playwright, 새 브라우저 컨텍스트로 캐시 없이 실측)
+    - Geist_Mono 정리: 제거하지 않았다. `font-mono`를 견적서 번호(`invoice-header.tsx`)와 안내 페이지 코드 블록(`guide/page.tsx`)이 쓴다(라틴 글자 전용)
+    - 결정: 한글 글리프용으로 Noto Sans KR(`next/font/google`)을 도입했다. `--font-sans`는 `var(--font-geist-sans), var(--font-noto-sans-kr)`로 라틴은 Geist, 한글만 Noto Sans KR이 맡는다. 가변 폰트 하나(굵기 100~900)로 쓰는 굵기(medium·semibold·bold)를 모두 처리하고 `display: "swap"`, `preload: false`(라틴은 Geist가 맡아 미리 받을 이유가 없음). 한글 조각(unicode-range, 약 120개)은 화면에 쓰인 글자가 속한 것만 내려받는다. 라이선스는 SIL OFL 1.1이며 폰트 파일을 저장소에 두지 않고 빌드 때 Google Fonts에서 받아 자체 호스팅한다(브라우저는 Google에 요청하지 않음)
+    - 비교(견적서 INV-2026-001 화면, 1280px, 캐시 없음):
+
+      | 안 | 폰트 요청 | 폰트 전송량 | CSS 전송량 | 저장소 변경 | 비고 |
+      | --- | --- | --- | --- | --- | --- |
+      | 현재(한글은 시스템 폰트) | 3개 | 68.9KB | 12.3KB | - | OS마다 한글 모양이 다름 |
+      | Noto Sans KR (선택) | 10개 | 179.1KB (+110KB) | 38.6KB (+26KB) | 2파일 수정 | 한글 조각 7개(조각당 약 14~16KB) |
+      | Pretendard 가변 동적 서브셋 self-host | 10개 | 250.2KB (+181KB) | 26.4KB (+14KB) | `public/`에 woff2 92개 3.0MB + CSS + 라이선스 | 조각당 약 21~38KB, 파일 관리 부담 |
+
+      안내 페이지(`/invoice/guide`): 현재 2개 52.4KB → Noto 10개 178.9KB. 모두 첫 방문 기준이며 이후는 브라우저 캐시(해시 파일명, immutable)를 쓴다
+    - 선택 이유: 같은 한글 화면에서 Noto가 Pretendard보다 전송량이 약 40% 적고, `next/font`가 자체 호스팅·`size-adjust` 대체 폰트를 처리하며 저장소에 파일을 늘리지 않는다. 추가 비용(약 136KB, 7요청)이 수백 KB에 못 미치고 OS별 한글 글꼴 차이를 없애 견적서의 일관성이 올라 도입했다. 비용이 아깝다면 되돌려도 기능에는 영향이 없다
+    - 확인: 한글이 Noto Sans KR로 렌더링됨(라이트·다크 스크린샷 확인, `document.fonts`에서 Noto 조각 loaded 8~9개). CLS: 견적서 0, 안내 페이지 0.0003(기준 0.1 이하). 지연 네트워크(지연 300ms, 200KB/s)에서도 견적서 CLS 0. 한계: 외부 요청이 `next build`에 필요하다(오프라인 빌드 불가, Vercel은 문제 없음). CSS는 `@font-face` 약 120개로 +26KB(압축 후)
+    - 되돌리는 방법: `src/app/layout.tsx`에서 `Noto_Sans_KR` import·`notoSansKr` 선언·`html`의 `${notoSansKr.variable}`을 지우고, `src/app/globals.css`의 `--font-sans`를 `var(--font-geist-sans);`로 되돌린다(커밋한 뒤에는 `git revert`나 직접 편집으로 되돌린다). 참고: Turbopack 캐시 때문에 `globals.css`만 바꾼 빌드는 이전 CSS를 낼 수 있어 `rm -rf .next` 후 빌드해야 한다
+  - ✅ 012-8 Suspense 경계 분리 검토와 영역별 스켈레톤 (2026-10-25, 프로덕션 서버)
+    - 실측(`NODE_OPTIONS --require`로 `fetch` 시작·완료 시각 기록, 소스 수정 없음, 캐시 미적중 요청): 서버 기동 뒤 첫 접속은 `pages.retrieve` 완료 +0.35~0.42초, 스키마 +0.60~0.70초, 항목 쿼리 +0.91~1.02초(3회 모두 비슷). 스키마가 메모리에 있는 이후 미적중은 `pages.retrieve` +0.39~0.44초, 항목 쿼리 +0.68~0.74초. 캐시 적중(60초 안, D8)은 약 10ms. 스켈레톤을 담은 정적 셸은 첫 바이트(TTFB 약 5~45ms)에 바로 온다
+    - 결정: 구조를 유지하고 헤더·항목을 별도 Suspense로 나누지 않았다. 이유: (1) 나누면 헤더가 항목보다 먼저 보이는 이득은 캐시 미적중일 때 약 0.3초(첫 접속 약 0.6초)뿐이고 적중 시에는 차이가 없다. (2) 나누려면 `getInvoice`를 메타·항목 단계로 쪼개고 `getCachedInvoice`도 두 캐시 함수(항목 쪽 키에 relation ID 목록)로 늘려야 해 캐시·D9·D12·PDF API 공유 경로가 복잡해지며 얻는 것은 0.3초다. (3) 항목 조회가 헤더 표시 뒤에 실패하면 `error.tsx`가 화면 전체를 바꿔 이미 보인 헤더가 사라지는 어색한 동작이 생긴다. (4) 화면이 두 단계로 바뀌어 레이아웃이 두 번 움직인다. 노션 요청 수와 404·에러 동작은 바뀌지 않는다
+    - 구현(스켈레톤만 정리): `invoice-skeleton.tsx`를 영역 컴포넌트 `InvoiceHeaderSkeleton`·`InvoiceClientSkeleton`·`InvoiceItemsSkeleton`·`InvoiceSummarySkeleton`으로 나누고 `InvoiceSkeleton`이 `InvoiceView`와 같은 순서·간격으로 조합한다. `loading.tsx`와 페이지 Suspense fallback은 계속 `InvoiceSkeleton` 하나를 쓴다. 나중에 영역별 Suspense로 나눌 때 영역 컴포넌트를 fallback으로 바로 쓸 수 있다
+    - CLS 방지(높이 일치): 로딩 직전 골격과 실제 화면의 높이를 비교해 어긋난 곳을 고쳤다(헤더 줄 높이 20px·발행자 이메일 줄 추가, 클라이언트 `space-y-1`·`h-7`, `견적 항목` 제목 `h-7`, 모바일 카드 제목 24px·줄 20px, 총 금액 모바일 `h-15`·`sm:h-16`). 수정 전 1280px은 골격 612px 대 실제 649px이었다. 수정 후 골격 대 실제 높이는 1280px·768px 648 대 649px(표 안쪽 1px 차이), 375px 1116 대 1116px로 맞는다. 측정 중 CLS 0
+    - 확인: 스트리밍 순서(골격이 먼저 나오고 약 0.9초 뒤 `article`로 교체), 형식 오류 ID `abc`·`test-1` HTTP 404, 없는 ID(`000…0`) 404 화면 + 200 + `noindex`, 잘못된 API 키로 에러 화면과 `다시 시도`(재시도 후에도 같은 화면, 화면·HTML에 키·내부 오류 문자열 없음. `unauthorized`는 Next.js 내부 필드명), 375px 가로 넘침 없음, 노션 요청 수(첫 접속 3회, 재접속 0회) 불변, 빌드 `/invoice/[notionPageId]` ◐ 유지·`/api/generate-pdf` ƒ
+  - ✅ 통합 회귀 테스트(배포 전) (2026-10-25, 프로덕션 빌드 서버 + Playwright): 실제 견적서 값·탭 제목·URL 변형 5종 동일 표시, PDF 다운로드(파일명·MIME·스피너·연속 클릭 1회·화면과 PDF 내용 일치), 404 3종·안내 `/`→307, 에러 화면·`다시 시도`(잘못된 키), 429(11번째)와 서버 로그 키·IP 없음, 캐시(재접속 0회, PDF 호출당 2회), 375/768/1280px 가로 넘침 없음(라이트·다크), 콘솔 에러 없음(HTTP 404 문서의 `Failed to load resource` 로그만 있음) 모두 통과. 참고: 없는 ID의 탭 제목이 페이지 이동 직후 읽으면 드물게 `견적서`로 보이는 경우가 있었으나(404용 React `<title>` 반영 전 시점) 렌더링이 끝난 뒤에는 6회 모두 `견적서를 찾을 수 없습니다`였다
+  - ✅ 수락 기준: 점검 결과와 개선 내역 기록, `npm run build` 통과(`/invoice/[notionPageId]` ◐ 유지, `/api/generate-pdf` ƒ). 012-4~6 후에도 동일
 
 - **Task 013: Vercel 배포 및 운영 환경 검증**
   - 크기: S / 의존: Task 009~011
   - 사전 확인: `01-getting-started/17-deploying.md`
   - Vercel 프로젝트 환경 변수 설정: `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `NEXT_PUBLIC_SITE_URL` (D9에 따른 추가 변수 포함)
   - PDF Route Handler의 함수 실행 시간·용량 제한 확인
-  - 배포 URL 대상 Playwright MCP 스모크 테스트: 견적서 조회, PDF 다운로드, 404
+  - 배포 URL 대상 Playwright MCP 스모크 테스트(간단히 4가지): 노션 수식 URL로 견적서 조회, PDF 다운로드, 없는 ID 404 화면, 형식 오류 ID의 HTTP 404. 전 시나리오 회귀·반응형·다크 모드는 로컬 통합 테스트에서 끝냈으므로 배포 환경에서 반복하지 않는다
+  - 배포 도메인이 정해지면 `NEXT_PUBLIC_SITE_URL`과 노션 `견적서 URL` 수식 도메인을 같은 값으로 바꾸고 재배포
   - 배포 전 `code-reviewer` 서브에이전트로 Phase 4 코드 변경사항(Task 012, 배포 설정) 리뷰, 지적 사항 반영 또는 보고
+    - ✅ 013-1 리뷰 결과(2026-10-25): 심각도 높음 없음, 승인. 반영: 없는 견적서의 탭 제목이 `견적서`로 잠깐 보이던 현상은 `generateMetadata`의 null 제목을 404 화면과 같은 `INVOICE_NOT_FOUND_TITLE`(`src/config/site.ts`)로 맞춰 해결, `x-forwarded-for` 신뢰 전제(Vercel 전용)를 012-2 기록에 명시, 폰트 되돌리기 안내의 `git checkout` 문구 수정. 보고만 한 것: 429 로그에 IP가 없어 차단 대상을 알 수 없음(개인정보를 위해 유지), `sweepBuckets` 상한 도달 시 요청마다 순회(비용 미미), 영역별 스켈레톤 4종의 불필요한 export(정리는 선택). 로컬 `typecheck`·`lint` 통과, `build` 통과(◐ 유지), `format:check`는 기존 파일 6건 경고만 남음
+    - 배포 체크리스트(013-2 전): 환경 변수 3개 `NOTION_API_KEY`·`NOTION_DATABASE_ID`·`NEXT_PUBLIC_SITE_URL`(키 값은 Vercel 화면에 직접 입력), `NEXT_PUBLIC_SITE_URL`과 노션 `견적서 URL` 수식의 도메인을 같은 값으로, 빌드가 Google Fonts(Noto Sans KR)에 접속해야 함, 배포 후 확인할 것: 함수 크기(폰트 TTF 약 12.4MB 포함 여부)·PDF 함수 실행 시간 한도(최악 약 40~60초이므로 플랜별 한도 확인)·인메모리 `use cache` 재사용 여부·`x-forwarded-for` 동작·로그에서 `pdf.rate_limited` 확인
   - 수락 기준: 배포 환경에서 MVP 성공 기준 5개 항목 충족
 
-- **Task 014: 프로젝트 문서 갱신**
-  - 크기: S / 의존: Task 013 / 코드 변경 없음
-  - `docs/architecture.md`: "예정된 구조"를 실제 구조로 갱신, 견적서 전용 컴포넌트 위치를 계층 규칙에 반영
-  - `CLAUDE.md`: 환경 변수 섹션에 노션 변수 추가, 새 라우트·모듈 설명 추가
-  - `README.md`: 노션 Integration 설정과 로컬 실행 방법
-  - 수락 기준: 문서 내용이 실제 코드 구조·환경 변수와 일치
+> Task 014(프로젝트 문서 갱신)는 범위에서 제외했다(2026-10-25 사용자 결정). `docs/architecture.md`·`CLAUDE.md`는 Phase 3 시점에 갱신했고, Phase 4에서 생긴 `logger.ts`·`getCachedInvoice`·`rate-limit.ts`와 README 보강은 필요할 때 따로 한다.
 
 ## 기능 ID ↔ Task 매핑
 
@@ -359,5 +421,5 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
         ├─ [UI]   004 화면 · 005 상태 화면 · 006 PDF 레이아웃 ✅
         └─ [로직] 007 노션 환경 ✅ ─ 008 조회 로직 ✅
                                      └─ 009 페이지 연동 ✅ · 010 PDF API ✅ · 011 URL
-                                                              └─ 012 최적화 · 013 배포 ─ 014 문서
+                                                              └─ 012 최적화 ✅ · 013 배포
 ```
