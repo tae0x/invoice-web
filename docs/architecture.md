@@ -7,7 +7,7 @@
 폴더가 곧 계층입니다. 의존 방향은 아래에서 위로만 갑니다(상위 계층만 하위 계층을 import).
 
 ```
-L0 Foundation   src/app/globals.css, src/lib/utils.ts, src/config/site.ts
+L0 Foundation   src/app/globals.css, src/config/site.ts, src/lib/*.ts, src/types/
 L1 Primitives   src/components/ui/          shadcn 원본 (CLI로만 추가)
 L2 Common       src/components/common/      ui를 조합한 재사용 블록 (로고, 테마 토글, 컨테이너 등)
 L3 Layout       src/components/layout/      헤더, 푸터 등 영역 단위 조립체
@@ -20,17 +20,35 @@ L6 Pages        src/app/**/page.tsx         페이지
 src/app/
 ├─ layout.tsx                  루트 레이아웃 (폰트, 테마, 툴팁, 토스트)
 ├─ loading.tsx / error.tsx / global-error.tsx / not-found.tsx
-└─ (marketing)/                헤더 + 푸터 레이아웃
-   └─ page.tsx                 서비스 안내 홈 (/)
+├─ (marketing)/                헤더 + 푸터 레이아웃
+│  └─ page.tsx                 서비스 안내 홈 (/)
+└─ invoice/
+   ├─ layout.tsx               견적서 전용 레이아웃 (헤더·푸터 없음, Container만 사용)
+   └─ [notionPageId]/          견적서 조회 (/invoice/[notionPageId])
+      ├─ page.tsx / loading.tsx / error.tsx / not-found.tsx
+      └─ _components/          견적서 전용 컴포넌트 (비공개 폴더)
+```
+
+```
+src/types/                     공용 타입 (서버·클라이언트 공용)
+├─ invoices.ts                 견적서 도메인 타입 (Invoice, InvoiceItem, InvoiceStatus)
+├─ notion.ts                   노션 속성 값 타입 (@notionhq/client SDK 타입 재사용)
+└─ pdf.ts                      PDF API 요청·응답 타입
+src/lib/
+├─ utils.ts                    cn re-export
+├─ constants.ts                상태 옵션·라벨, 로케일·통화·시간대 상수
+├─ format.ts                   금액·날짜 포맷 유틸
+├─ invoice-schema.ts           노션 페이지 ID zod 스키마
+├─ dummy-invoices.ts           UI 개발용 더미 데이터
+└─ notion/properties.ts        노션 속성명 매핑 상수 (서버 전용, types/notion.ts만 import type으로 참조)
 ```
 
 ## 예정된 구조 (미구현)
 
 PRD(`docs/PRD.md`)에 따라 아래 구조가 구현 단계에서 추가될 예정입니다. 구현 전이므로 현재는 존재하지 않습니다.
 
-- `src/app/invoice/[id]/`: 견적서 조회 페이지 (`/invoice/[notionPageId]`)
 - `src/app/api/generate-pdf/`: PDF 생성 Route Handler
-- `src/lib/notion/`: Notion 클라이언트와 데이터 조회 (서버 전용)
+- `src/lib/notion/`: Notion 클라이언트와 데이터 조회 (서버 전용, Task 007·008). 현재는 속성명 매핑(`properties.ts`)만 있음
 
 ## 규칙
 

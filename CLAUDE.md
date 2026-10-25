@@ -25,17 +25,18 @@ Next.js 16.4 / React 19.3이며 학습 데이터와 다른 API가 있다. 코드
 
 ### 폴더가 곧 계층 (`docs/architecture.md`에도 정의됨)
 
-소스는 모두 `src/` 아래에 있다 (`src/app`, `src/components`, `src/config`, `src/lib`). 이 문서의 소스 경로 표기는 `src/`를 생략한다 (루트 설정 파일이 가리키는 경로만 `src/`를 명시). `public/`, 설정 파일, `CLAUDE.md`·`AGENTS.md`·`README.md`는 루트에 있고, 상세 문서는 `docs/`에 있다.
+소스는 모두 `src/` 아래에 있다 (`src/app`, `src/components`, `src/config`, `src/lib`, `src/types`). 이 문서의 소스 경로 표기는 `src/`를 생략한다 (루트 설정 파일이 가리키는 경로만 `src/`를 명시). `public/`, 설정 파일, `CLAUDE.md`·`AGENTS.md`·`README.md`는 루트에 있고, 상세 문서는 `docs/`에 있다.
 
 의존 방향은 아래에서 위로만 간다. 상위 계층만 하위 계층을 import 한다.
 
-`config/site.ts`, `lib/utils.ts` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
+`config/site.ts`, `lib/*.ts`, `types/` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
 
-PRD(`docs/PRD.md`)에 정의된 견적서 조회 페이지(`/invoice/[notionPageId]`)와 Notion 연동, PDF 생성은 구현 전(예정)이다.
+견적서 조회 라우트(`/invoice/[notionPageId]`)는 골격만 있고, Notion 연동과 PDF 생성은 구현 전(예정)이다. 공용 타입은 `types/`(`invoices.ts`, `notion.ts`, `pdf.ts`), 공용 상수·유틸은 `lib/` 직하위(`constants.ts`, `format.ts`, `invoice-schema.ts`, `dummy-invoices.ts`), 노션 속성명 매핑은 `lib/notion/properties.ts`에 있다. `lib/notion/`은 L0에 속하지만 서버 전용이다(클라이언트 컴포넌트에서 import 금지, 타입만 `import type`으로 참조 가능). `types/notion.ts`는 `@notionhq/client`의 SDK 타입을 재사용하고 속성명 키는 매핑 상수에서 파생한다.
 
 ### 라우트 그룹
 
 - `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 현재 서비스 안내 홈(`/`)만 있다. 스타터의 docs·examples·app-shell·로그인/회원가입은 삭제했다.
+- `app/invoice/` — 헤더·푸터 없는 독립 레이아웃(D10, `Container`만 사용). `[notionPageId]/_components/`에 견적서 전용 컴포넌트를 둔다.
 
 ### `config/site.ts`가 사이트 정보의 단일 출처
 
