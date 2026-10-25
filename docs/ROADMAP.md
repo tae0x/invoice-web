@@ -3,7 +3,7 @@
 노션에서 작성한 견적서를 고유 링크 하나로 웹에서 확인하고 PDF로 저장하게 하는 MVP를 완성합니다.
 
 **📅 최종 업데이트**: 2026-10-25
-**📊 진행 상황**: Phase 3 완료, Phase 4 진행 중 (12/13 Tasks 완료, 92%. Task 014는 범위에서 제외). Task 009의 일부 확인(노션 값 수정 후 반영, 항목 0개·빈 속성·26개 이상·긴 값 실데이터)은 해당 견적서를 노션에 만든 뒤 진행
+**📊 진행 상황**: Phase 4 완료, 모든 Phase 완료 (13/13 Tasks 완료, 100%. Task 014는 범위에서 제외). Task 009의 일부 확인(노션 값 수정 후 반영, 항목 0개·빈 속성·26개 이상·긴 값 실데이터)은 해당 견적서를 노션에 만든 뒤 진행
 
 ## 개요
 
@@ -315,7 +315,7 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
     - ✅ 노션 수식이 만든 URL(`http://localhost:3000/invoice/4044512d22df80c899b5ffca83602b91`)로 이동 시 정상 표시 (탭 제목 `견적서 INV-2026-001`, 항목 3개)
     - ✅ 같은 견적서의 하이픈 포함·미포함 ID URL 모두 같은 견적서 표시 (D5·Task 003 결정 기준)
 
-### Phase 4: 최적화 및 배포
+### Phase 4: 최적화 및 배포 ✅
 
 - **Task 012: 성능·접근성 점검 및 개선** ✅ - 완료
   - 크기: S / 의존: Task 009~011
@@ -387,7 +387,7 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
   - ✅ 통합 회귀 테스트(배포 전) (2026-10-25, 프로덕션 빌드 서버 + Playwright): 실제 견적서 값·탭 제목·URL 변형 5종 동일 표시, PDF 다운로드(파일명·MIME·스피너·연속 클릭 1회·화면과 PDF 내용 일치), 404 3종·안내 `/`→307, 에러 화면·`다시 시도`(잘못된 키), 429(11번째)와 서버 로그 키·IP 없음, 캐시(재접속 0회, PDF 호출당 2회), 375/768/1280px 가로 넘침 없음(라이트·다크), 콘솔 에러 없음(HTTP 404 문서의 `Failed to load resource` 로그만 있음) 모두 통과. 참고: 없는 ID의 탭 제목이 페이지 이동 직후 읽으면 드물게 `견적서`로 보이는 경우가 있었으나(404용 React `<title>` 반영 전 시점) 렌더링이 끝난 뒤에는 6회 모두 `견적서를 찾을 수 없습니다`였다
   - ✅ 수락 기준: 점검 결과와 개선 내역 기록, `npm run build` 통과(`/invoice/[notionPageId]` ◐ 유지, `/api/generate-pdf` ƒ). 012-4~6 후에도 동일
 
-- **Task 013: Vercel 배포 및 운영 환경 검증**
+- **Task 013: Vercel 배포 및 운영 환경 검증** ✅ - 완료
   - 크기: S / 의존: Task 009~011
   - 사전 확인: `01-getting-started/17-deploying.md`
   - Vercel 프로젝트 환경 변수 설정: `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `NEXT_PUBLIC_SITE_URL` (D9에 따른 추가 변수 포함)
@@ -398,6 +398,9 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
     - ✅ 013-1 리뷰 결과(2026-10-25): 심각도 높음 없음, 승인. 반영: 없는 견적서의 탭 제목이 `견적서`로 잠깐 보이던 현상은 `generateMetadata`의 null 제목을 404 화면과 같은 `INVOICE_NOT_FOUND_TITLE`(`src/config/site.ts`)로 맞춰 해결, `x-forwarded-for` 신뢰 전제(Vercel 전용)를 012-2 기록에 명시, 폰트 되돌리기 안내의 `git checkout` 문구 수정. 보고만 한 것: 429 로그에 IP가 없어 차단 대상을 알 수 없음(개인정보를 위해 유지), `sweepBuckets` 상한 도달 시 요청마다 순회(비용 미미), 영역별 스켈레톤 4종의 불필요한 export(정리는 선택). 로컬 `typecheck`·`lint` 통과, `build` 통과(◐ 유지), `format:check`는 기존 파일 6건 경고만 남음
     - 배포 체크리스트(013-2 전): 환경 변수 3개 `NOTION_API_KEY`·`NOTION_DATABASE_ID`·`NEXT_PUBLIC_SITE_URL`(키 값은 Vercel 화면에 직접 입력), `NEXT_PUBLIC_SITE_URL`과 노션 `견적서 URL` 수식의 도메인을 같은 값으로, 빌드가 Google Fonts(Noto Sans KR)에 접속해야 함, 배포 후 확인할 것: 함수 크기(폰트 TTF 약 12.4MB 포함 여부)·PDF 함수 실행 시간 한도(최악 약 40~60초이므로 플랜별 한도 확인)·인메모리 `use cache` 재사용 여부·`x-forwarded-for` 동작·로그에서 `pdf.rate_limited` 확인
   - 수락 기준: 배포 환경에서 MVP 성공 기준 5개 항목 충족
+  - ✅ 배포 결과(2026-10-25, `https://invoice-web-ashy.vercel.app`, Git 연동): 스모크 테스트 4가지를 `curl`로 확인했다. 실제 견적서(INV-2026-001) 200·탭 제목 `견적서 INV-2026-001 | Invoice Web`·응답 약 2.1초(콜드), 없는 ID는 404 화면 + 200 + `noindex`, 형식 오류 ID(`/invoice/abc`)는 HTTP 404, `/`는 `/invoice/guide`로 307. PDF API는 200·`application/pdf`·`INV-2026-001.pdf`·14,807B·약 2.7초이며 한글 폰트 TTF가 서버리스 함수에 포함돼 정상 렌더링됨(폰트 누락이면 500)
+  - ✅ 노션 `견적서 URL` 수식의 도메인을 `https://invoice-web-ashy.vercel.app/invoice/` + `id()`로 변경했다(데이터 소스 속성 갱신 API 응답 정상, 수식 출력 값은 다시 읽어 확인하지 않음. 같은 `id()` 식은 Task 011에서 확인)
+  - 미확인(운영하면서 필요하면 확인): Vercel 대시보드의 함수 크기·실행 시간 한도(PDF는 2.7초에 응답), 인메모리 `use cache`의 인스턴스 간 재사용, 로그의 `pdf.rate_limited` 이벤트. `NEXT_PUBLIC_SITE_URL`은 메타데이터 기준 도메인으로만 쓰이므로 Vercel 환경 변수에 배포 주소를 넣고 싶다면 사용자가 직접 설정한다
 
 > Task 014(프로젝트 문서 갱신)는 범위에서 제외했다(2026-10-25 사용자 결정). `docs/architecture.md`·`CLAUDE.md`는 Phase 3 시점에 갱신했고, Phase 4에서 생긴 `logger.ts`·`getCachedInvoice`·`rate-limit.ts`와 README 보강은 필요할 때 따로 한다.
 
