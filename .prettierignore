@@ -1,0 +1,15 @@
+# shadcn CLI 원본은 직접 수정하지 않는다
+src/components/ui
+
+# 문서·에이전트·작업 데이터
+*.md
+docs
+.claude
+.mcp.json
+shrimp_data
+
+# 생성물·정적 자산
+.next
+public
+package-lock.json
+*.ttf

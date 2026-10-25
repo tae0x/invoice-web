@@ -1,21 +1,32 @@
 # CLAUDE.md
 
+노션 DB의 견적서를 `/invoice/[notionPageId]` 공개 URL로 보여주고 PDF로 저장하는 MVP. 요구사항은 `docs/PRD.md`, 작업 순서와 확정 결정(D1~D12)은 `docs/ROADMAP.md`, 폴더 구조는 `docs/architecture.md`를 본다.
+
 ## 명령어
 
 ```bash
-npm run dev      # 개발 서버 (http://localhost:3000)
-npm run build    # 프로덕션 빌드 (cacheComponents prerender 오류는 빌드에서도 드러남)
-npm run start    # 빌드 결과 실행
-npm run lint     # ESLint (eslint-config-next core-web-vitals + typescript)
-npx tsc --noEmit # 타입 검사
+npm run dev         # 개발 서버 (http://localhost:3000)
+npm run build       # 프로덕션 빌드 (cacheComponents prerender 오류는 빌드에서도 드러남)
+npm run start       # 빌드 결과 실행
+npm run lint        # ESLint (eslint-config-next core-web-vitals + typescript)
+npm run lint:fix    # ESLint 자동 수정
+npm run typecheck   # 라우트 타입 생성(next typegen) 후 tsc --noEmit
+npm run format      # Prettier 적용 (components/ui, *.md 등은 .prettierignore로 제외)
+npm run check-all   # typecheck + lint + format:check 통합 실행
 npx shadcn@latest add <name>  # shadcn 컴포넌트 추가
 ```
 
-테스트 러너는 설정되어 있지 않다. 동작 검증은 개발 서버 + Playwright MCP로 한다. `.mcp.json`에는 playwright, context7(라이브러리 문서), sequential-thinking, shadcn MCP가 설정되어 있다.
+테스트 러너는 없다. 동작 검증은 개발 서버 + Playwright MCP로 한다. 커밋 전에 husky가 `lint-staged`로 스테이징된 파일을 검사한다(`.husky/pre-commit`).
+
+## 작업 완료 체크리스트
+
+1. `npm run check-all`
+2. `npm run build` (라우트·캐싱을 바꿨다면)
+3. 코드를 구현·수정했다면 응답을 끝내기 전에 `code-reviewer` 서브에이전트로 변경사항을 리뷰하고 지적 사항을 사용자에게 보고한다. 문서·설정만 바뀐 경우는 생략한다.
 
 ## Next.js 버전 주의
 
-Next.js 16.4 / React 19.3이며 학습 데이터와 다른 API가 있다. 코드를 쓰기 전에 `node_modules/next/dist/docs/`의 해당 가이드를 읽는다 (`AGENTS.md` 지침). 예를 들어 에러 바운더리의 복구 prop은 `reset`이 아니라 `retry`다 (`app/error.tsx`).
+Next.js 16.4.3 / React 19.3이며 학습 데이터와 다른 API가 있다. 코드를 쓰기 전에 `node_modules/next/dist/docs/`의 해당 가이드를 읽는다 (`AGENTS.md` 지침). 예를 들어 에러 바운더리의 복구 prop은 `reset`이 아니라 `retry`다 (`app/error.tsx`).
 
 `next.config.ts`에서 `cacheComponents: true`와 `partialPrefetching: true`가 켜져 있다. 동적 API(`cookies`, `headers`, `Date.now` 등)를 쓰면 Suspense 경계나 `use cache` 처리가 필요하다.
 
@@ -25,22 +36,23 @@ Next.js 16.4 / React 19.3이며 학습 데이터와 다른 API가 있다. 코드
 
 ### 폴더가 곧 계층 (`docs/architecture.md`에도 정의됨)
 
-소스는 모두 `src/` 아래에 있다 (`src/app`, `src/components`, `src/config`, `src/lib`, `src/types`). 이 문서의 소스 경로 표기는 `src/`를 생략한다 (루트 설정 파일이 가리키는 경로만 `src/`를 명시). `public/`, 설정 파일, `CLAUDE.md`·`AGENTS.md`·`README.md`는 루트에 있고, 상세 문서는 `docs/`에 있다.
+소스는 모두 `src/` 아래에 있다. 이 문서의 소스 경로 표기는 `src/`를 생략한다 (루트 설정 파일이 가리키는 경로만 `src/`를 명시).
 
 의존 방향은 아래에서 위로만 간다. 상위 계층만 하위 계층을 import 한다.
 
 `config/site.ts`, `lib/*.ts`, `types/` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
 
-견적서 조회 라우트(`/invoice/[notionPageId]`)는 골격만 있고, Notion 연동과 PDF 생성은 구현 전(예정)이다. 공용 타입은 `types/`(`invoices.ts`, `notion.ts`, `pdf.ts`), 공용 상수·유틸은 `lib/` 직하위(`constants.ts`, `format.ts`, `invoice-schema.ts`, `dummy-invoices.ts`), 노션 속성명 매핑은 `lib/notion/properties.ts`에 있다. `lib/notion/`은 L0에 속하지만 서버 전용이다(클라이언트 컴포넌트에서 import 금지, 타입만 `import type`으로 참조 가능). `types/notion.ts`는 `@notionhq/client`의 SDK 타입을 재사용하고 속성명 키는 매핑 상수에서 파생한다.
+- `lib/notion/`은 L0에 속하지만 서버 전용이다(클라이언트 컴포넌트에서 import 금지, 타입만 `import type`으로 참조 가능). `types/notion.ts`는 `@notionhq/client`의 SDK 타입을 재사용하고 속성명 키는 `lib/notion/properties.ts`의 매핑 상수에서 파생한다.
+- `src/proxy.ts`는 형식이 틀린 견적서 ID를 정적 404 라우트 `app/invoice/invalid-id/`로 rewrite한다(D12).
 
 ### 라우트 그룹
 
-- `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 현재 서비스 안내 홈(`/`)만 있다. 스타터의 docs·examples·app-shell·로그인/회원가입은 삭제했다.
+- `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 서비스 안내(`/invoice/guide`)만 있고, `/`는 `next.config.ts`의 `redirects()`로 여기에 보낸다(경로는 `siteConfig.guidePath`).
 - `app/invoice/` — 헤더·푸터 없는 독립 레이아웃(D10, `Container`만 사용). `[notionPageId]/_components/`에 견적서 전용 컴포넌트를 둔다.
 
 ### `config/site.ts`가 사이트 정보의 단일 출처
 
-`siteConfig`(이름·설명·URL)가 여기에 있다. 내비게이션 항목이 필요해지면 이 파일에 추가한다.
+이름·설명·URL·발행자·안내 경로(`siteConfig`)는 이 파일에 둔다.
 
 ### shadcn/ui는 Base UI 기반 (`base-nova`)
 
@@ -68,12 +80,5 @@ Radix가 아니므로 `asChild`가 없다. 대신 `render` prop을 쓴다. 링�
 
 ## 환경 변수
 
-`NEXT_PUBLIC_SITE_URL`만 사용한다 (`config/site.ts`의 `siteConfig.url`, `metadataBase`의 기준). 없으면 `http://localhost:3000`이다. 예시는 `.env.example`에 있다.
-
-## 코드 리뷰
-
-코드 구현(기능 추가·수정·리팩토링)을 마치면 응답을 끝내기 전에 `code-reviewer` 서브에이전트를 실행해 변경사항을 리뷰하고, 지적 사항을 사용자에게 보고한다. 문서·설정만 바뀐 경우는 생략한다.
-
-## Git
-
-`.playwright-mcp/`(Playwright MCP 산출물)는 gitignore 대상이다.
+- `NEXT_PUBLIC_SITE_URL`: `config/site.ts`의 `siteConfig.url`, `metadataBase`의 기준. 없으면 `http://localhost:3000`이다.
+- `NOTION_API_KEY`, `NOTION_DATABASE_ID`: 서버 전용(`NEXT_PUBLIC_` 금지). `NOTION_DATABASE_ID`는 데이터 소스 ID가 아니라 Invoices 데이터베이스 ID다. `lib/notion/env.ts`가 첫 노션 호출 때 zod로 검증하므로 없어도 빌드는 통과한다.

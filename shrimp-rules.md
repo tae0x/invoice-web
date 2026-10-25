@@ -5,11 +5,12 @@ AI Agent 전용 규칙 문서다. 프로젝트 고유 규칙만 적는다. 충�
 ## 프로젝트 개요
 
 - 서비스: 노션 DB의 견적서를 `/invoice/[notionPageId]` 공개 URL로 보여주고 PDF로 저장하는 MVP
-- 스택: Next.js 16.4(App Router), React 19.3, TypeScript 5, Tailwind v4, shadcn/ui(Base UI, `base-nova`), next-themes, sonner, zod
+- 스택: Next.js 16.4.3(App Router), React 19.3, TypeScript 5, Tailwind v4, shadcn/ui(Base UI, `base-nova`), next-themes, sonner, zod
 - 기준 문서: `docs/PRD.md`(요구사항), `docs/ROADMAP.md`(작업·확정 결정 D1~D12·노션 DB 속성 명세), `docs/architecture.md`(구조)
-- 견적서 조회 라우트(`src/app/invoice/[notionPageId]/`)는 골격만 있음
-- 구현 전(예정): `src/proxy.ts`, `src/app/api/generate-pdf/`, `src/lib/notion/` 클라이언트·조회 로직, `@react-pdf/renderer`
-- `@notionhq/client`(5.x)는 설치됨. 현재는 `src/types/notion.ts`에서 SDK 타입만 사용
+- 견적서 조회 라우트(`src/app/invoice/[notionPageId]/`)는 `getInvoice`로 노션 실데이터를 조회한다 (Task 009)
+- 구현 완료: `src/lib/notion/`(`env.ts`, `client.ts`, `mappers.ts`, `invoices.ts`), `src/proxy.ts`(형식 오류 → `src/app/invoice/invalid-id/` rewrite), `@react-pdf/renderer` 문서 레이아웃
+- PDF API `src/app/api/generate-pdf/`는 견적서 ID만 받아 `getInvoice`로 재조회한다 (Task 010)
+- `@notionhq/client`(5.x) 클라이언트는 `src/lib/notion/client.ts`의 `getNotionClient()`에서만 만든다. `src/types/notion.ts`는 SDK 타입을 재사용한다
 - 환경설정 완료: 노션 Integration, `.env.local`의 `NOTION_API_KEY`·`NOTION_DATABASE_ID`, 노션 Invoices DB와 관계형 Items DB
 - 테스트 러너 없음. 검증은 `npx tsc --noEmit`, `npm run lint`, `npm run build`, 개발 서버 + Playwright MCP
 
@@ -42,7 +43,7 @@ AI Agent 전용 규칙 문서다. 프로젝트 고유 규칙만 적는다. 충�
 - 페이지 콘텐츠 폭은 `Container`(`components/common`)로 통일
 - 레이아웃 props 타입은 전역 헬퍼 `LayoutProps<"/경로">` 사용 (`src/app/layout.tsx` 참고)
 - 페이지 `metadata`는 `title`만 지정. 루트 title template(`%s | 사이트명`)이 완성한다
-- 앱 코드는 `NEXT_PUBLIC_SITE_URL`만 참조 중. `NOTION_API_KEY`, `NOTION_DATABASE_ID`는 `.env.local`에 설정되어 있고 코드 도입은 ROADMAP Task 007에서 한다. 새 변수는 `.env.example`에도 추가한다 (Notion 키는 `NEXT_PUBLIC_` 접두사 금지, 서버 전용). `NODE_ENV`는 Next.js가 설정하므로 env 파일에 적지 않는다
+- 앱 코드는 `NEXT_PUBLIC_SITE_URL`과 `NOTION_API_KEY`, `NOTION_DATABASE_ID`(`src/lib/notion/env.ts`에서만 읽음)를 참조한다. 새 변수는 `.env.example`에도 추가한다 (Notion 키는 `NEXT_PUBLIC_` 접두사 금지, 서버 전용). `NODE_ENV`는 Next.js가 설정하므로 env 파일에 적지 않는다
 - `.env`, `.env.*` 파일은 읽기 권한이 차단되어 있다. 읽으려고 우회하지 말고, 노션 값 확인이 필요하면 키를 출력하지 않는 스크립트를 사용자 승인 후 실행하거나 사용자에게 묻는다
 
 ## shadcn/ui (Base UI)
