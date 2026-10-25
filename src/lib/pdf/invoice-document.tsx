@@ -1,12 +1,8 @@
 // A4 견적서 PDF 문서 (D1). 웹 화면과 별도의 PDF 전용 레이아웃이며 서버에서만 렌더링한다.
 // Route Handler(Task 010)가 이 컴포넌트를 재사용한다.
-import {
-  Document,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+import "server-only";
+
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import { siteConfig } from "@/config/site";
 import { INVOICE_STATUS_LABELS } from "@/lib/constants";
@@ -164,9 +160,7 @@ export function InvoiceDocument({ invoice }: { invoice: Invoice }) {
         <Text
           style={styles.pageNumber}
           fixed
-          render={({ pageNumber, totalPages }) =>
-            `${pageNumber}/${totalPages}`
-          }
+          render={({ pageNumber, totalPages }) => `${pageNumber}/${totalPages}`}
         />
 
         {/* 2페이지부터 항목 표 머리글을 맨 위에 반복한다. fixed는 Page의 직계 자식이어야 동작하며,
@@ -183,7 +177,9 @@ export function InvoiceDocument({ invoice }: { invoice: Invoice }) {
         <View style={styles.header}>
           <View style={styles.headerMain}>
             <Text style={styles.title}>견적서</Text>
-            <Text style={styles.invoiceNumber}>{formatText(invoice.invoiceNumber)}</Text>
+            <Text style={styles.invoiceNumber}>
+              {formatText(invoice.invoiceNumber)}
+            </Text>
           </View>
           {/* 상태가 비어 있으면 웹 화면과 같이 숨긴다 */}
           {invoice.status && (
@@ -211,7 +207,9 @@ export function InvoiceDocument({ invoice }: { invoice: Invoice }) {
 
         <View style={styles.section}>
           <Text style={styles.label}>수신</Text>
-          <Text style={styles.clientName}>{formatText(invoice.clientName)}</Text>
+          <Text style={styles.clientName}>
+            {formatText(invoice.clientName)}
+          </Text>
         </View>
 
         <View style={styles.section}>

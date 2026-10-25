@@ -9,3 +9,9 @@ export const notionPageIdSchema = z
   .string()
   .regex(NOTION_PAGE_ID_PATTERN)
   .transform((value) => value.replaceAll("-", "").toLowerCase());
+
+// PDF 생성 API 요청 본문 (D2: 견적서 ID만 받고 서버가 노션을 다시 조회한다)
+// 정의되지 않은 키는 무시한다 (zod 기본 동작이므로 클라이언트가 보낸 다른 값은 PDF 내용에 영향이 없다)
+export const generatePdfRequestSchema = z.object({
+  notionPageId: notionPageIdSchema,
+});

@@ -1,5 +1,6 @@
 // PDF용 한글 폰트 등록 (서버 전용 코드, D1)
-// 'server-only' 가드는 Route Handler를 만드는 Task 010에서 검토한다
+import "server-only";
+
 import path from "node:path";
 import { Font } from "@react-pdf/renderer";
 
