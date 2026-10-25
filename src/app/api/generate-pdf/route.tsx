@@ -1,5 +1,7 @@
 import { generatePdfRequestSchema } from "@/lib/invoice-schema";
+import { describeError, logger } from "@/lib/logger";
 import { getInvoice } from "@/lib/notion/invoices";
+import { checkPdfRateLimit, getClientKey } from "@/lib/pdf/rate-limit";
 import { renderInvoicePdf } from "@/lib/pdf/render-invoice-pdf";
 import { buildPdfResponseHeaders } from "@/lib/pdf/response-headers";
 import type { GeneratePdfErrorResponse } from "@/types/pdf";
@@ -8,16 +10,34 @@ import type { GeneratePdfErrorResponse } from "@/types/pdf";
 const MAX_BODY_BYTES = 1024;
 
 // 오류 응답: 내부 오류 메시지는 담지 않고 일반 문장만 돌려준다
-function errorResponse(message: string, status: number) {
+function errorResponse(
+  message: string,
+  status: number,
+  extraHeaders?: Record<string, string>,
+) {
   const body: GeneratePdfErrorResponse = { error: message };
   return Response.json(body, {
     status,
-    headers: { "Cache-Control": "no-store" },
+    headers: { "Cache-Control": "no-store", ...extraHeaders },
   });
 }
 
 // PDF 생성: 견적서 ID를 받아 A4 PDF를 돌려준다
 export async function POST(request: Request) {
+  // 호출 빈도 제한: 본문 읽기와 노션 조회 전에 먼저 확인한다
+  const limit = checkPdfRateLimit(getClientKey(request.headers));
+  if (!limit.allowed) {
+    // 클라이언트 IP는 기록하지 않는다
+    logger.warn("pdf.rate_limited", {
+      retryAfterSeconds: limit.retryAfterSeconds,
+    });
+    return errorResponse(
+      "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+      429,
+      { "Retry-After": String(limit.retryAfterSeconds) },
+    );
+  }
+
   // JSON이 아닌 요청은 거절한다. 다른 사이트의 단순 요청(text/plain 폼 등)이 이 API를 부르지 못하고
   // CORS preflight를 거치게 된다
   const contentType = request.headers.get("content-type") ?? "";
@@ -61,11 +81,8 @@ export async function POST(request: Request) {
       headers: buildPdfResponseHeaders(invoice.invoiceNumber),
     });
   } catch (error) {
-    // 오류 이름만 남긴다 (메시지에 노션 응답 내용이 섞일 수 있다)
-    console.error(
-      "[generate-pdf] 생성 실패:",
-      error instanceof Error ? error.name : "unknown",
-    );
+    // 오류 이름·코드·상태만 남긴다 (메시지에 노션 응답 내용이 섞일 수 있다)
+    logger.error("pdf.generate_failed", describeError(error));
     return errorResponse("PDF를 생성하지 못했습니다.", 500);
   }
 }

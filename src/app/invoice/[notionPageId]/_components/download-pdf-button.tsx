@@ -37,6 +37,11 @@ export function DownloadPdfButton({
       });
       // 상태 코드가 정상이어도 PDF가 아닌 응답(오류 페이지 등)이면 실패로 본다
       const contentType = res.headers.get("content-type") ?? "";
+      // 호출 빈도 제한(429)은 다시 시도하라는 안내를 따로 보여 준다
+      if (res.status === 429) {
+        toast.error("요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
       if (!res.ok || !contentType.includes("application/pdf")) {
         throw new Error(`PDF 생성 실패 (${res.status})`);
       }
@@ -74,7 +79,11 @@ export function DownloadPdfButton({
     >
       {isPending ? (
         <>
-          <Spinner role="presentation" aria-label={undefined} aria-hidden="true" />
+          <Spinner
+            role="presentation"
+            aria-label={undefined}
+            aria-hidden="true"
+          />
           PDF 생성 중
         </>
       ) : (
