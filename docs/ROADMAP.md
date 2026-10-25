@@ -3,7 +3,7 @@
 발행자가 관리자 화면에서 견적서 목록을 보고, 클라이언트에게 보낼 링크를 바로 복사할 수 있게 합니다.
 
 **📅 최종 업데이트**: 2026-10-26
-**📊 진행 상황**: Phase 5~7 ✅ 완료, Phase 8·9 진행 중 (9/11 Tasks 완료, 82%). Task 110 완료. Task 111은 코드 완료이나 노션 데이터 확인 3건이 사용자 노션 작업을 기다리는 중. Task 109는 문서 갱신만 완료이고 사용자 작업(`.env.example`, Vercel 환경 변수, 재배포)과 배포 스모크가 남음
+**📊 진행 상황**: Phase 5~10 ✅ 완료 (11/11 Tasks 완료, 100%). 배포 환경에서 F020~F023 동작 확인. Task 111의 노션 데이터 확인 3건(새 견적서 반영, 휴지통 제외, 발행일 정렬)은 사용자 결정으로 하지 않기로 해 미검증
 **📝 문서 버전**: v2.1 (고도화)
 
 > 이 문서는 [`docs/roadmaps/ROADMAP_V1.md`](./roadmaps/ROADMAP_V1.md)(MVP, Phase 1~4·Task 001~013 완료)의 후속 문서입니다. V1의 확정 결정 D1~D12, 완료 기록, 실측값은 V1 문서가 기준이며 여기서는 다시 적지 않습니다. Phase는 5부터, Task는 101부터 번호를 매깁니다.
@@ -240,7 +240,7 @@ Task 101에서 확정했습니다. 결정을 바꿀 때는 이 표를 먼저 고
     - 빈 속성(클라이언트명·상태·날짜 없음)이 빈 값으로 매핑됨
   - 위험: `filter_properties`가 속성 ID만 받으면 데이터 소스 스키마 조회가 1회 늘 수 있다. 100건당 노션 호출이 1회(약 0.2~0.5초) 늘어난다
 
-### Phase 8: 관리자 인증·실데이터 연동·배포
+### Phase 8: 관리자 인증·실데이터 연동 ✅
 
 담당 에이전트: `nextjs-app-router-developer` (링크 복사 클라이언트 동작 포함)
 
@@ -299,18 +299,7 @@ Task 101에서 확정했습니다. 결정을 바꿀 때는 이 표를 먼저 고
     - 낮음: 목록 제목 `h1` 중복(`loading.tsx`·`page.tsx`), 언마운트 중 `writeText` 대기 후 타이머 등록, 좁은 화면 복사 버튼 `title`, 표·카드 중복 렌더로 인한 RSC 페이로드, 경고 판정의 `VERCEL_ENV` 고려, `listInvoices` import 제한 ESLint 규칙
   - 위험: 세션 검사와 노션 조회를 같은 Suspense 경계 안에 두지 않으면 빌드 오류. 목록이 커지면 스트리밍 전 대기 시간이 늘어난다
 
-- **Task 109: 환경 변수·문서 반영과 배포**
-  - 크기: S / 의존: Task 107, 108
-  - 사용자 작업(에이전트 수정 불가, 미완료): `.env.local`의 `ADMIN_SESSION_SECRET`은 32자 이상이어야 함(짧으면 로그인이 실패하고 개발 서버가 힌트를 표시), `.env.example`에 `ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET` 이름(값 없이) 추가, Vercel 환경 변수에 `ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`·`NEXT_PUBLIC_SITE_URL=https://invoice-web-ashy.vercel.app` 설정 후 재배포
-  - 문서 갱신(에이전트):
-    - ✅ `docs/architecture.md`: 관리자 라우트(`/admin`, `/admin/login`, `(dashboard)`), `src/lib/auth/`, `src/lib/admin/`, `invoice-list.ts`·`errors.ts`, `invoice-url.ts`, `proxy.ts` 관리자 분기, `/invoices` 리디렉트
-    - ✅ `CLAUDE.md`: "라우트 그룹"에 `app/admin/`과 `/invoices` 리디렉트, "환경 변수"에 `ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`(이름과 용도만), `proxy.ts` 설명에 관리자 분기
-    - ✅ `docs/notion-setup.md` 3절: 관리자 목록 링크 복사가 기본, 노션 수식은 선택, 수식 도메인과 `NEXT_PUBLIC_SITE_URL` 일치
-  - 배포 URL 스모크 확인(미완료, 배포 후): `/admin` → 로그인 리디렉트, 로그인 후 목록 표시, HTTPS에서 복사 값이 `https://invoice-web-ashy.vercel.app/invoice/<ID>`, 공개 견적서 링크와 PDF 다운로드 정상, `/admin` 응답 `noindex`. 전 시나리오 회귀는 로컬에서 끝냈으므로 반복하지 않는다
-  - 완료 기준: 배포 환경에서 F020~F023 동작, 로드맵 진행 상황 갱신
-  - 참고: `shrimp-rules.md`의 "PRD 범위 밖 기능 금지"·D1~D12 문구는 V2와 충돌하므로 사용자 판단으로 갱신이 필요하다(에이전트는 수정하지 않음)
-
-### Phase 9: 후속 보완
+### Phase 9: 후속 보완 ✅
 
 담당 에이전트: `nextjs-app-router-developer`
 
@@ -327,7 +316,7 @@ Task 101에서 확정했습니다. 결정을 바꿀 때는 이 표를 먼저 고
     - ✅ `/invoices` → 307 `/admin` → 쿠키 없으면 `/admin/login?next=%2Fadmin`, 로그인 후 `/invoices`가 `/admin` 목록
     - ✅ 프로덕션 빌드·서버에서 힌트 문구가 응답에 없음, `.next/static`에서 `ADMIN_` 이름·테스트 값 0건
 
-- **Task 111: Task 108 보류 지적 반영** - 코드 완료, 노션 데이터 확인 대기
+- **Task 111: Task 108 보류 지적 반영** ✅ - 완료
   - 크기: M / 의존: Task 108
   - ✅ `copy-invoice-link-button.tsx` (수정): 토스트 고정 id(`copy-invoice-link-<번호>`)로 연속 클릭 중복 방지, 실패 카운터 state를 effect 의존성으로 두어 연속 실패에도 입력란 전체 선택 복원(클릭 때 상태를 먼저 비워 live 문구도 다시 읽힘), `await writeText` 중 언마운트되면 상태·타이머를 만들지 않는 가드, 기본 `title`(= `aria-label`)
   - ✅ `login-rate-limit.ts` (수정): 클라이언트 키가 `"unknown"`이면 `resetLoginRateLimit`이 아무것도 지우지 않음(여러 요청이 한 버킷을 공유하므로 다른 요청의 실패 누적을 지우지 않기 위함)
@@ -343,17 +332,38 @@ Task 101에서 확정했습니다. 결정을 바꿀 때는 이 표를 먼저 고
     - 실측: 복사 성공·비동기 거부·동기 실패(clipboard 제거) 각 3회 반복 클릭에서 live 문구 노드가 매번 새로 생성되고 입력란은 재마운트되지 않으며(최초 1회만 추가) 매번 전체 선택, 토스트 1개 유지. 복사 값 `https://.../invoice/<ID>` 형식 유지. 임시 스크립트로 `http:foo`·`?x=1`·앞 공백·`user:pw@`·`//` 경로는 `null`/정리 결과 확인(테스트 파일 미보관). 로그인 제한(4번 실패 후 성공 → 5번 허용 → 6번째 제한), `/invoice/abc` 404, 실제 견적서 ID 200, `/invoice/guide` 200, `/` → 307, `/invoices` → 307 `/admin`, PDF 200 확인. `npm run check-all`(기존 포맷 경고 4건 제외)·`npm run build` 통과
   - ✅ 3차 리뷰 반영(2026-10-26): 기준 URL 거부 규칙을 `normalizeBaseUrl`(`src/lib/invoice-url.ts`) 한곳에 모아 `buildInvoiceUrl`과 관리자 화면 경고 판정(`isUnusableBaseUrl`)이 함께 쓰도록 통일(공백·query·계정 정보 등으로 모든 복사 버튼이 비활성인데 경고가 안 뜨던 불일치 해소). 값 중간의 공백·탭·개행은 거부, 연속된 `/`(`https://a.com//app`)는 `/app`으로 정리. `parseBaseUrl`은 내부 함수로 전환. 임시 스크립트로 19개 값 확인, `tsc`·`eslint`·`prettier` 통과(`build`는 생략)
   - 보류(3차 리뷰 낮음): 입력란 `select()` 포커스 동작과 live 영역·토스트 이중 낭독은 Safari·Firefox·스크린 리더 수동 확인이 필요해 미반영
-  - [ ] 노션 데이터 확인 3건(미완료, 사용자의 노션 작업이 필요해 에이전트가 하지 않음): 새 견적서 생성 직후 목록 반영(D17), 휴지통 견적서 제외, 발행일이 다른 견적서의 정렬
-  - 완료 기준: 위 코드 항목 통과, 노션 데이터 확인 3건 통과(사용자가 노션에서 작업한 뒤 확인)
+  - 생략(2026-10-26 사용자 결정, 노션에서 직접 데이터를 만들고 지워야 해 번거로워 진행하지 않음): 노션 데이터 확인 3건(새 견적서 생성 직후 목록 반영(D17), 휴지통 견적서 제외, 발행일이 다른 견적서의 정렬). 코드는 단위 확인과 실제 노션 DB 2건 조회로 검증했고, 이 3건은 미검증 상태로 남는다. 필요해지면 Task 108의 테스트 체크리스트로 확인한다
+  - 완료 기준: 위 코드 항목 통과 (노션 데이터 확인 3건은 사용자 결정으로 제외)
   - 주의: `NEXT_PUBLIC_SITE_URL`이 빈 값이거나 올바른 URL이 아니면 `src/app/layout.tsx`의 `new URL(siteConfig.url)`(`metadataBase`)이 던져 `next build`가 실패한다. 그래서 프로덕션에서 이 경고가 실제로 보이려면 빌드를 통과하는 값(localhost 등)이어야 한다. 위 검증은 `layout.tsx`를 임시로 고정값으로 바꿔 수행했고 즉시 복원함. `site.ts`의 `??` → `||`와 URL 검증은 범위 밖이라 제안으로 남김
+
+### Phase 10: 문서 반영과 배포 ✅
+
+담당 에이전트: `nextjs-app-router-developer` (사용자 작업 포함)
+
+- **Task 109: 환경 변수·문서 반영과 배포** ✅ - 완료
+  - 크기: S / 의존: Task 107, 108, 110, 111
+  - 사용자 작업(에이전트 수정 불가):
+    - ✅ 재배포(2026-10-26 사용자 보고)
+    - ✅ `.env.local`의 `ADMIN_SESSION_SECRET`은 32자 이상이어야 함(짧으면 로그인이 실패하고 개발 서버가 힌트를 표시)
+    - ✅ `.env.example`에 변수 **이름만**(값 없이) 추가: `ADMIN_PASSWORD=`, `ADMIN_SESSION_SECRET=` 두 줄(사용자 완료). 앱이 읽는 노션 변수(`NOTION_API_KEY`, `NOTION_DATABASE_ID`)와 `NEXT_PUBLIC_SITE_URL`도 같은 방식으로 이름만 추가(MVP부터 남아 있던 항목, 사용자가 "Task 109 수행"으로 보고. 에이전트는 `.env*`를 읽을 수 없어 파일 내용은 확인하지 못함) 다른 사람이 프로젝트를 받았을 때 어떤 변수를 채워야 하는지 알려 주는 용도이고 실제 값은 `.env.local`과 Vercel에만 둔다
+    - ✅ Vercel 환경 변수 `ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`·`NEXT_PUBLIC_SITE_URL=https://invoice-web-ashy.vercel.app` 설정과 재배포(사용자 확인, 배포 환경에서 로그인·목록 동작)
+  - 문서 갱신(에이전트):
+    - ✅ `docs/architecture.md`: 관리자 라우트(`/admin`, `/admin/login`, `(dashboard)`), `src/lib/auth/`, `src/lib/admin/`, `invoice-list.ts`·`errors.ts`, `invoice-url.ts`, `proxy.ts` 관리자 분기, `/invoices` 리디렉트
+    - ✅ `CLAUDE.md`: "라우트 그룹"에 `app/admin/`과 `/invoices` 리디렉트, "환경 변수"에 `ADMIN_PASSWORD`·`ADMIN_SESSION_SECRET`(이름과 용도만), `proxy.ts` 설명에 관리자 분기
+    - ✅ `docs/notion-setup.md` 3절: 관리자 목록 링크 복사가 기본, 노션 수식은 선택, 수식 도메인과 `NEXT_PUBLIC_SITE_URL` 일치
+  - 배포 URL 스모크 확인(사용자 재배포 후, 2026-10-26): 전 시나리오 회귀는 로컬에서 끝냈으므로 반복하지 않는다
+    - ✅ 비로그인으로 확인한 항목(`https://invoice-web-ashy.vercel.app`): `/` → 307 `/invoice/guide`, `/invoice/guide` 200, `/invoices` → 307 `/admin`, `/admin` → 307 `/admin/login?next=%2Fadmin`(응답 헤더 `X-Robots-Tag: noindex`), `/admin/login` 200과 `<meta name="robots" content="noindex, nofollow">`, `/invoice/abc` 404, 실제 견적서 200, PDF 다운로드(`POST /api/generate-pdf`) 200 `application/pdf`(`%PDF-`)
+    - ✅ 비밀번호가 필요한 항목은 사용자가 직접 확인(2026-10-26 "배포 완료되었고 잘 작동" 보고): 배포 사이트에서 로그인, `/admin` 목록 표시, 링크 복사·열기. 복사 값의 정확한 문자열은 사용자 보고에 포함되지 않아 에이전트가 직접 대조하지 못함
+  - 완료 기준: 배포 환경에서 F020~F023 동작, 로드맵 진행 상황 갱신
+  - 참고: `shrimp-rules.md`의 "PRD 범위 밖 기능 금지"·D1~D12 문구는 V2와 충돌하므로 사용자 판단으로 갱신이 필요하다(에이전트는 수정하지 않음)
 
 ## 기능 ID ↔ Task 매핑
 
 | 기능 ID | 기능명 | 관련 Task |
 | --- | --- | --- |
 | F020 | 관리자 견적서 목록 | 101, 102, 103, 105, 106, 108, 111 |
-| F021 | 견적서 링크 복사 | 101, 103, 105, 108, 109, 111 |
-| F022 | 관리자 접근 보호 | 101, 102, 104, 107, 109, 110, 111 |
+| F021 | 견적서 링크 복사 | 101, 103, 105, 108, 111, 109 |
+| F022 | 관리자 접근 보호 | 101, 102, 104, 107, 110, 111, 109 |
 | F023 | 다크 모드 보완 | 101, 104 |
 
 ## 진행 순서 요약
@@ -363,6 +373,7 @@ Task 101에서 확정했습니다. 결정을 바꿀 때는 이 표를 먼저 고
  ├─ [골격] Phase 5: 102 관리자 라우트 · 103 타입·링크 유틸·더미   ← nextjs-app-router-developer
  │      ├─ [UI]   Phase 6: 104 셸·로그인 UI · 105 목록 UI        ← ui-markup-specialist
  │      └─ [노션] Phase 7: 106 목록 쿼리 (Phase 6과 병렬)         ← notion-api-database-expert
- │             └─ [통합] Phase 8: 107 인증 ─ 108 실데이터·링크 복사 ─ 109 배포·문서  ← nextjs-app-router-developer
+ │             └─ [통합] Phase 8: 107 인증 ─ 108 실데이터·링크 복사  ← nextjs-app-router-developer
  │                    └─ [보완] Phase 9: 110 로그인 진단·/invoices 리디렉트 ─ 111 108 보류 지적 반영
+ │                           └─ [배포] Phase 10: 109 환경 변수·문서·배포 스모크
 ```
