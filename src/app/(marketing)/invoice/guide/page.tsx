@@ -3,7 +3,6 @@ import { CircleAlert, Download, FileText } from "lucide-react";
 
 import { Container } from "@/components/common/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "견적서 조회 안내",
@@ -77,7 +76,7 @@ export default function GuidePage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <code className="block rounded-md bg-muted px-3 py-2 font-mono text-sm break-all">
-            {siteConfig.url}/invoice/[견적서ID]
+            https://yourdomain.com/invoice/[견적서ID]
           </code>
           <p className="text-muted-foreground">
             발행자가 보낸 링크의 [견적서ID] 부분은 각 견적서마다 고유한

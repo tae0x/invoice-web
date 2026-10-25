@@ -48,7 +48,7 @@ NEXT_PUBLIC_SITE_URL=
 3. 각 견적서의 `견적서 URL` 값을 복사해 클라이언트에게 보냅니다.
 
 주의할 점
-- 수식 안의 도메인은 배포 도메인과 같아야 하고, `NEXT_PUBLIC_SITE_URL`(메타데이터 기준 도메인과 안내 화면의 URL 예시)도 같은 값으로 맞춰 두는 것이 좋습니다. 로컬 확인에는 `"http://localhost:3000/invoice/" + id()`를 씁니다.
+- 수식 안의 도메인은 배포 도메인과 같아야 하고, `NEXT_PUBLIC_SITE_URL`(메타데이터 기준 도메인. 안내 화면의 URL 예시는 고정 문구 `https://yourdomain.com/...`이다)도 같은 값으로 맞춰 두는 것이 좋습니다. 로컬 확인에는 `"http://localhost:3000/invoice/" + id()`를 씁니다.
 - 앱은 하이픈이 있는 ID(`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)와 없는 ID(32자리), 대소문자 구분 없이 같은 견적서로 열어 줍니다. 주소 뒤의 `/`나 `?utm_source=...` 같은 쿼리가 붙어도 열립니다.
 - 노션 페이지 자체의 공유 링크(`https://www.notion.so/...`)는 앱 주소가 아니므로 클라이언트에게 보내지 않습니다.
 - 이 속성은 앱이 읽지 않습니다. 코드는 페이지 ID만 사용하므로 속성을 추가해도 다른 설정을 바꿀 필요가 없습니다.
