@@ -9,7 +9,8 @@ export function InvoiceSummary({
   return (
     <div className="rounded-lg bg-muted p-4">
       <dl className="flex items-baseline justify-between gap-4 sm:justify-end">
-        <dt className="text-sm text-muted-foreground">총 금액</dt>
+        {/* bg-muted 위에서 muted-foreground는 대비가 4.5:1에 못 미쳐(라이트 4.35) 본문색을 쓴다 */}
+        <dt className="text-sm">총 금액</dt>
         <dd className="text-xl font-bold whitespace-nowrap tabular-nums sm:text-2xl">
           {formatCurrency(totalAmount)}
         </dd>

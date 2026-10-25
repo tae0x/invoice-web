@@ -74,14 +74,25 @@ export function InvoiceItemsTable({ items }: { items: InvoiceItem[] }) {
             <Table aria-labelledby="invoice-items-heading">
               <TableHeader>
                 <TableRow>
-                  <TableHead className={HEAD_CLASS}>항목명</TableHead>
-                  <TableHead className={cn(HEAD_CLASS, "text-right")}>
+                  <TableHead scope="col" className={HEAD_CLASS}>
+                    항목명
+                  </TableHead>
+                  <TableHead
+                    scope="col"
+                    className={cn(HEAD_CLASS, "text-right")}
+                  >
                     수량
                   </TableHead>
-                  <TableHead className={cn(HEAD_CLASS, "text-right")}>
+                  <TableHead
+                    scope="col"
+                    className={cn(HEAD_CLASS, "text-right")}
+                  >
                     단가
                   </TableHead>
-                  <TableHead className={cn(HEAD_CLASS, "text-right")}>
+                  <TableHead
+                    scope="col"
+                    className={cn(HEAD_CLASS, "text-right")}
+                  >
                     금액
                   </TableHead>
                 </TableRow>
