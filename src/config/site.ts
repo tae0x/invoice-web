@@ -1,3 +1,7 @@
+// 견적서 404 화면의 제목. 404 화면의 <title>과 page.tsx의 generateMetadata가 같은 값을 써서
+// 어느 쪽이 먼저 적용돼도 탭 제목이 어긋나지 않게 한다
+export const INVOICE_NOT_FOUND_TITLE = "견적서를 찾을 수 없습니다";
+
 // 사이트 기본 정보 (metadata, 헤더, 푸터에서 공유)
 // 서비스명은 임시값이며 확정되면 변경한다
 export const siteConfig = {

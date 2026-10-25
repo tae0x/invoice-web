@@ -8,9 +8,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { siteConfig } from "@/config/site";
+import { INVOICE_NOT_FOUND_TITLE, siteConfig } from "@/config/site";
 
-const NOT_FOUND_TITLE = "견적서를 찾을 수 없습니다";
+const NOT_FOUND_TITLE = INVOICE_NOT_FOUND_TITLE;
 
 // 스트리밍 전 404(proxy가 형식 오류로 404를 준 요청)의 탭 제목
 // `noindex` 메타 태그는 notFound() 처리 시 Next.js가 자동으로 넣는다 (not-found.md)

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cacheLife } from "next/cache";
 import { cache } from "react";
 import {
   APIErrorCode,
@@ -11,6 +12,7 @@ import {
 } from "@notionhq/client";
 
 import { notionPageIdSchema } from "@/lib/invoice-schema";
+import { logger } from "@/lib/logger";
 import type { Invoice } from "@/types/invoices";
 
 import { getNotionClient } from "./client";
@@ -43,7 +45,7 @@ class NotionRequestError extends Error {
 }
 
 // Invoices 데이터 소스 ID → Items 데이터 소스 ID
-// 스키마 정보라 요청 사이에 재사용한다 (견적서 데이터는 캐시하지 않는다, D8)
+// 스키마 정보라 요청 사이에 재사용한다 (견적서 데이터 캐시는 getCachedInvoice가 따로 맡는다, D8)
 // `항목` relation의 대상 DB를 바꾸면 서버를 재시작해야 반영된다
 const itemsDataSourceIds = new Map<string, string>();
 
@@ -61,9 +63,9 @@ function toRequestError(error: unknown): unknown {
   // 환경 변수 오류 등 그 밖의 오류는 그대로 넘긴다 (메시지에 값이 없음)
   if (!requestError) return error;
 
-  console.error("[notion] 견적서 조회 실패", {
+  logger.error("notion.invoice_fetch_failed", {
     code: requestError.code,
-    status: requestError.status,
+    status: requestError.status ?? undefined,
   });
   return requestError;
 }
@@ -198,9 +200,9 @@ async function fetchInvoice(invoiceId: string): Promise<Invoice | null> {
   if (normalizeNotionId(parent.database_id) !== databaseId) {
     // 환경 변수에 DB ID 대신 데이터 소스 ID를 넣으면 모든 견적서가 404가 되므로 원인을 로그로 알린다 (ID 값은 남기지 않음)
     if (normalizeNotionId(parent.data_source_id) === databaseId) {
-      console.warn(
-        "[notion] NOTION_DATABASE_ID에 데이터 소스 ID가 설정된 것 같습니다. 데이터베이스 ID로 바꿔 주세요",
-      );
+      logger.warn("notion.database_id_looks_like_data_source_id", {
+        hint: "NOTION_DATABASE_ID에 데이터 소스 ID가 설정된 것 같습니다. 데이터베이스 ID로 바꿔 주세요",
+      });
     }
     return null;
   }
@@ -253,5 +255,36 @@ export const getInvoice = cache(
     } catch (error) {
       throw toRequestError(error);
     }
+  },
+);
+
+// 화면용 캐시 수명 (D8). 노션 수정이 최대 60초 늦게 반영된다
+// - revalidate 60: 60초 동안은 캐시를 그대로 쓰고 노션을 부르지 않는다
+// - expire 61: revalidate보다 길어야 하는 규칙을 지키는 최소값. 이 값이 없으면(기본 never)
+//   60초가 지난 뒤 첫 요청이 오래된 값을 그대로 받는다. 61초부터는 새로 조회해 기다린다
+// - stale 30: 브라우저 라우터 캐시를 30초(Next.js 최소값)로 줄인다. 기본 5분이면 클라이언트 이동에서 더 오래 묵는다
+const INVOICE_CACHE_LIFE = { stale: 30, revalidate: 60, expire: 61 } as const;
+
+// 캐시 키는 정규화된 ID 문자열 하나뿐이다. 반환값은 도메인 객체(Invoice) 또는 null이며 비밀 값은 없다
+// throw한 호출은 캐시에 저장되지 않아 다음 요청이 다시 조회한다. null(없는 견적서)은 값이라 같은 60초 동안 저장된다
+async function readInvoiceWithCache(
+  invoiceId: string,
+): Promise<Invoice | null> {
+  "use cache";
+  cacheLife(INVOICE_CACHE_LIFE);
+
+  return getInvoice(invoiceId);
+}
+
+// 견적서 페이지·generateMetadata용 60초 캐시 조회 (서버 전용)
+// - ID를 캐시 밖에서 정규화해 하이픈·대문자만 다른 URL이 같은 항목을 쓰게 한다
+// - React.cache로 같은 요청 안의 중복 호출(페이지 본문 + 메타데이터)은 하나로 합친다
+// - PDF API는 D2(최신 금액 보장)에 따라 이 함수가 아니라 getInvoice를 쓴다
+export const getCachedInvoice = cache(
+  async (pageId: string): Promise<Invoice | null> => {
+    const parsed = notionPageIdSchema.safeParse(pageId);
+    if (!parsed.success) return null;
+
+    return readInvoiceWithCache(parsed.data);
   },
 );
