@@ -1,13 +1,13 @@
+import type { Metadata } from "next";
 import { CircleAlert, Download, FileText } from "lucide-react";
 
 import { Container } from "@/components/common/container";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { siteConfig } from "@/config/site";
+
+export const metadata: Metadata = {
+  title: "견적서 조회 안내",
+};
 
 // 견적서 조회 방법 3단계
 const steps = [
@@ -18,7 +18,8 @@ const steps = [
   },
   {
     title: "견적서 확인",
-    description: "링크를 클릭하면 견적서 내용을 웹에서 바로 확인할 수 있습니다.",
+    description:
+      "링크를 클릭하면 견적서 내용을 웹에서 바로 확인할 수 있습니다.",
   },
   {
     title: "PDF 다운로드",
@@ -27,12 +28,14 @@ const steps = [
   },
 ];
 
-// 서비스 안내 홈: 견적서 조회 방법, URL 예시, 문제 해결 안내
-export default function HomePage() {
+// 서비스 안내(초기 화면): 견적서 조회 방법, URL 예시, 문제 해결 안내
+export default function GuidePage() {
   return (
-    <Container className="flex max-w-3xl flex-col gap-6 py-12">
+    <Container className="flex flex-col gap-6 py-12">
       <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">견적서 조회 시스템</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          견적서 조회 시스템
+        </h1>
         <p className="text-muted-foreground">
           노션 기반 견적서 관리 시스템에 오신 것을 환영합니다.
         </p>
@@ -92,8 +95,8 @@ export default function HomePage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            견적서를 찾을 수 없거나 문제가 발생한 경우, 견적서를 발행한 담당자에게
-            올바른 링크를 다시 요청해주세요.
+            견적서를 찾을 수 없거나 문제가 발생한 경우, 견적서를 발행한
+            담당자에게 올바른 링크를 다시 요청해주세요.
           </p>
         </CardContent>
       </Card>

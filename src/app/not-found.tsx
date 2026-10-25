@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/config/site";
 import {
   Empty,
   EmptyContent,
@@ -25,7 +26,10 @@ export default function NotFound() {
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button render={<Link href="/" />} nativeButton={false}>
+          <Button
+            render={<Link href={siteConfig.guidePath} />}
+            nativeButton={false}
+          >
             홈으로 돌아가기
           </Button>
         </EmptyContent>

@@ -37,9 +37,9 @@ export function InvoiceSkeleton() {
         <Skeleton className="h-6 w-24" />
 
         {/* 모바일 카드 */}
-        <div className="flex flex-col gap-3 md:hidden">
+        <div className="flex flex-col gap-4 md:hidden">
           {Array.from({ length: 3 }, (_, index) => (
-            <div key={index} className="space-y-3 rounded-lg border p-4">
+            <div key={index} className="space-y-3 rounded-lg border p-5">
               <Skeleton className="h-5 w-3/4" />
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
@@ -51,10 +51,19 @@ export function InvoiceSkeleton() {
         </div>
 
         {/* 태블릿·데스크톱 표 행 */}
-        <div className="hidden flex-col gap-3 md:flex">
-          <Skeleton className="h-8 w-full" />
+        {/* 실제 표와 높이를 맞춘다: 머리글 h-12, 행 p-4 + 한 줄(20px), 행마다 border-b(마지막 제외) */}
+        <div className="hidden flex-col md:flex">
+          <div className="flex h-12 items-center gap-4 border-b px-4">
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-24" />
+          </div>
           {Array.from({ length: 3 }, (_, index) => (
-            <div key={index} className="flex items-center gap-4 px-2">
+            <div
+              key={index}
+              className="flex items-center gap-4 border-b p-4 last:border-b-0"
+            >
               <Skeleton className="h-5 flex-1" />
               <Skeleton className="h-5 w-12" />
               <Skeleton className="h-5 w-24" />
