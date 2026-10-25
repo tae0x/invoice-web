@@ -11,6 +11,9 @@ export const siteConfig = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   // 서비스 초기 화면 (조회 방법 안내). `/`는 여기로 리디렉트한다
   guidePath: "/invoice/guide",
+  // 관리자 영역 (D13): 견적서 목록과 로그인 화면 경로
+  adminPath: "/admin",
+  adminLoginPath: "/admin/login",
   // 견적서 발행자 정보 (D7: 상호·이메일만 둔다. 화면과 PDF가 공통으로 사용)
   // 아래 값은 가상 값이므로 실제 상호·이메일로 교체한다
   issuer: {

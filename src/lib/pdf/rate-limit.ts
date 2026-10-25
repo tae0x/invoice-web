@@ -34,10 +34,13 @@ function sweepBuckets(now: number) {
 export type RateLimitResult =
   { allowed: true } | { allowed: false; retryAfterSeconds: number };
 
+// IP 헤더가 하나도 없을 때 `getClientKey`가 돌려주는 키 (로그인 제한 쪽 가드와 공유한다)
+export const UNKNOWN_CLIENT_KEY = "unknown";
+
 // 요청 헤더에서 클라이언트 IP를 읽는다 (Vercel은 x-forwarded-for를 직접 설정한다)
 export function getClientKey(headers: Headers): string {
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || headers.get("x-real-ip")?.trim() || "unknown";
+  return forwarded || headers.get("x-real-ip")?.trim() || UNKNOWN_CLIENT_KEY;
 }
 
 export function checkPdfRateLimit(
