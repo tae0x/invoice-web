@@ -43,11 +43,13 @@ Next.js 16.4.3 / React 19.3이며 학습 데이터와 다른 API가 있다. 코�
 `config/site.ts`, `lib/*.ts`, `types/` → `components/ui` → `components/common` → `components/layout` → `components/providers` → `app/**/layout.tsx` → `app/**/page.tsx`
 
 - `lib/notion/`은 L0에 속하지만 서버 전용이다(클라이언트 컴포넌트에서 import 금지, 타입만 `import type`으로 참조 가능). `types/notion.ts`는 `@notionhq/client`의 SDK 타입을 재사용하고 속성명 키는 `lib/notion/properties.ts`의 매핑 상수에서 파생한다.
-- `src/proxy.ts`는 형식이 틀린 견적서 ID를 정적 404 라우트 `app/invoice/invalid-id/`로 rewrite한다(D12).
+- `src/proxy.ts`는 `/invoice/*`에서 형식이 틀린 견적서 ID를 정적 404 라우트 `app/invoice/invalid-id/`로 rewrite하고(D12), `/admin/*`에서 세션 쿠키의 서명·만료를 낙관적으로 검사해 실패하면 `/admin/login?next=...`로 307한다(D15). 관리자 응답에는 `X-Robots-Tag: noindex`를 붙인다. 데이터는 `lib/admin/`의 DAL이 세션을 다시 검사한 뒤 읽는다.
+- `lib/auth/`(세션·인증)와 `lib/admin/`(관리자 DAL), `lib/notion/invoice-list.ts`(목록 조회)는 서버 전용이다. 복사용 링크는 `lib/invoice-url.ts`의 `buildInvoiceUrl`로만 만든다.
 
 ### 라우트 그룹
 
 - `app/(marketing)/` — `SiteHeader` + `SiteFooter` 레이아웃. 서비스 안내(`/invoice/guide`)만 있고, `/`는 `next.config.ts`의 `redirects()`로 여기에 보낸다(경로는 `siteConfig.guidePath`).
+- `app/admin/` — 관리자 영역(독립 레이아웃, 헤더·푸터 없음, 인증 보호). `login/`(`/admin/login`)과 `(dashboard)/`(`/admin` 견적서 목록, 관리자 상단바)로 나뉜다. `/invoices`는 `next.config.ts`의 `redirects()`로 `/admin`에 307 이동한다.
 - `app/invoice/` — 헤더·푸터 없는 독립 레이아웃(D10, `Container`만 사용). `[notionPageId]/_components/`에 견적서 전용 컴포넌트를 둔다.
 
 ### `config/site.ts`가 사이트 정보의 단일 출처
@@ -82,3 +84,6 @@ Radix가 아니므로 `asChild`가 없다. 대신 `render` prop을 쓴다. 링�
 
 - `NEXT_PUBLIC_SITE_URL`: `config/site.ts`의 `siteConfig.url`, `metadataBase`의 기준. 없으면 `http://localhost:3000`이다.
 - `NOTION_API_KEY`, `NOTION_DATABASE_ID`: 서버 전용(`NEXT_PUBLIC_` 금지). `NOTION_DATABASE_ID`는 데이터 소스 ID가 아니라 Invoices 데이터베이스 ID다. `lib/notion/env.ts`가 첫 노션 호출 때 zod로 검증하므로 없어도 빌드는 통과한다.
+- `ADMIN_PASSWORD`: 관리자 로그인 비밀번호. 서버 전용(`NEXT_PUBLIC_` 금지).
+- `ADMIN_SESSION_SECRET`: 세션 쿠키 서명 키. 서버 전용, **32자 이상** 무작위 값이다(`openssl rand -base64 48` 등). 짧으면 로그인이 항상 실패한다. 바꾸면 모든 세션이 무효화되므로, 세션을 강제로 끊으려면 이 값을 교체한다. `ADMIN_PASSWORD`만 바꿔도 이미 발급된 세션은 유지되므로, 비밀번호를 바꿀 때는 이 값도 함께 교체한다. 두 변수는 `lib/auth/env.ts`가 첫 사용 때 검증하므로 없어도 빌드는 통과한다.
+- `NEXT_PUBLIC_SITE_URL`은 관리자 목록의 링크 복사 기준이기도 하다. 값이 비었거나 올바른 URL이 아니면 `next build`가 실패하고(`metadataBase`), 프로덕션에서 localhost이면 관리자 화면에 경고가 뜬다.

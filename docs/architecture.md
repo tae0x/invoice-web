@@ -10,7 +10,7 @@
 L0 Foundation   src/app/globals.css, src/config/site.ts, src/lib/*.ts, src/types/
 L1 Primitives   src/components/ui/          shadcn 원본 (CLI로만 추가)
 L2 Common       src/components/common/      ui를 조합한 재사용 블록 (로고, 테마 토글, 컨테이너 등)
-L3 Layout       src/components/layout/      헤더, 푸터 등 영역 단위 조립체
+L3 Layout       src/components/layout/      헤더, 푸터, 관리자 상단바 등 영역 단위 조립체
 L4 Providers    src/components/providers/   ThemeProvider
 L5 Templates    src/app/**/layout.tsx       라우트 그룹별 레이아웃
 L6 Pages        src/app/**/page.tsx         페이지
@@ -23,13 +23,25 @@ src/app/
 ├─ (marketing)/                헤더 + 푸터 레이아웃
 │  └─ invoice/guide/page.tsx   서비스 안내 (/invoice/guide, `/`는 여기로 리디렉트)
 ├─ api/generate-pdf/route.tsx  PDF 생성 Route Handler (POST, 견적서 ID만 받아 서버가 노션을 재조회, D2)
+├─ admin/                      관리자 영역 (/admin, 독립 레이아웃, 인증 보호, D13)
+│  ├─ layout.tsx               공통 레이아웃 (noindex 메타데이터)
+│  ├─ login/                   /admin/login (상단바 없음)
+│  │  ├─ page.tsx / actions.ts 로그인 화면, 로그인 Server Action (시도 제한, 상수 시간 비교, 세션 발급)
+│  │  └─ _components/          로그인 폼 (비공개 폴더)
+│  └─ (dashboard)/             관리자 상단바 레이아웃 그룹 (URL에 포함되지 않음)
+│     ├─ layout.tsx / actions.ts   상단바 + 넓힌 Container, 로그아웃 액션
+│     ├─ page.tsx / loading.tsx / error.tsx   /admin = 견적서 목록 (스켈레톤, 노션 오류 처리)
+│     └─ _components/          목록 표·카드, 링크 복사 버튼 등 (비공개 폴더)
 └─ invoice/
    ├─ layout.tsx               견적서 전용 레이아웃 (헤더·푸터 없음, Container만 사용)
    ├─ [notionPageId]/          견적서 조회 (/invoice/[notionPageId])
    │  ├─ page.tsx / loading.tsx / error.tsx / not-found.tsx
    │  └─ _components/          견적서 전용 컴포넌트 (비공개 폴더)
    └─ invalid-id/              형식이 틀린 ID의 정적 404 (proxy rewrite 대상, not-found.tsx는 위 404 화면 재사용)
-src/proxy.ts                   /invoice/:path* ID 형식 검사 → 형식 오류는 invalid-id로 rewrite (D12, 노션 조회 없음)
+src/proxy.ts                   경로별 분기 (matcher: /invoice/:path*, /admin/:path*)
+                               - /invoice/*: ID 형식 검사 → 형식 오류는 invalid-id로 rewrite (D12, 노션 조회 없음)
+                               - /admin/*: 쿠키 토큰의 서명·만료만 낙관적으로 검사 → 실패 시 /admin/login?next=...로 307, 응답에 X-Robots-Tag: noindex (D15)
+next.config.ts redirects()     / → /invoice/guide, /invoices → /admin (둘 다 307)
 ```
 
 ```
@@ -42,6 +54,16 @@ src/lib/
 ├─ constants.ts                상태 옵션·라벨, 로케일·통화·시간대 상수
 ├─ format.ts                   금액·날짜 포맷 유틸
 ├─ invoice-schema.ts           노션 페이지 ID zod 스키마
+├─ invoice-url.ts              buildInvoiceUrl·parseBaseUrl: 복사용 공개 URL 생성 (siteConfig.url 기준, 순수 함수)
+├─ auth/                       관리자 인증 (서버 전용 `server-only`. session-token.ts·redirect-path.ts는 proxy도 사용)
+│  ├─ env.ts                   ADMIN_PASSWORD·ADMIN_SESSION_SECRET 지연 검증 (zod)
+│  ├─ session-token.ts         만료 시각 토큰의 HMAC-SHA256 서명·검증 (Web Crypto)
+│  ├─ session.ts               세션 쿠키 이름·옵션, 발급·삭제
+│  ├─ dal.ts                   verifyAdminSession (서버에서 세션 재검사, 실패 시 로그인으로)
+│  ├─ login-rate-limit.ts      로그인 시도 제한 (IP당 60초 5회, 인메모리)
+│  └─ redirect-path.ts         로그인 후 이동 경로(next) 검증
+├─ admin/                      관리자 DAL (서버 전용)
+│  └─ invoices.ts              getAdminInvoiceList: 세션 검사 → listInvoices → 복사 URL 부여한 화면용 DTO
 ├─ pdf/                        PDF 생성 (서버 전용, `server-only`)
 │  ├─ fonts.ts / fonts/        Noto Sans KR 정적 TTF 등록
 │  ├─ invoice-document.tsx     A4 견적서 PDF 문서
@@ -52,10 +74,15 @@ src/lib/
    ├─ env.ts                   NOTION_API_KEY·NOTION_DATABASE_ID 지연 검증 (zod)
    ├─ client.ts                노션 클라이언트 싱글턴
    ├─ mappers.ts               노션 속성 → 도메인 값 변환
-   └─ invoices.ts              getInvoice (견적서 + 항목 조회)
+   ├─ errors.ts                노션 오류를 코드·상태만 담은 오류로 변환하고 로그에 남김
+   ├─ invoices.ts              getInvoice (견적서 + 항목 조회)
+   └─ invoice-list.ts          listInvoices (관리자 목록 조회, 요청 간 캐시 없음, D16·D17)
 ```
 
 ## 규칙
+
+- 관리자 목록 데이터는 `src/lib/admin/`의 DAL(`getAdminInvoiceList`)만 거쳐 읽는다. 화면 코드가 `listInvoices`를 직접 부르지 않는다(세션 검사가 항상 먼저 실행되도록).
+- 인증 검사는 proxy(낙관적 검사)와 DAL·Server Action(재검사) 두 곳에서 한다. proxy만으로 데이터를 보호하지 않는다.
 
 - 서버 컴포넌트가 기본이며, 상호작용이 필요한 말단 컴포넌트에만 `"use client"`를 씁니다.
 - 사이트 이름·설명·URL은 `src/config/site.ts` 한 곳에서 관리합니다. 내비게이션 항목이 필요해지면 이 파일에 추가합니다.
