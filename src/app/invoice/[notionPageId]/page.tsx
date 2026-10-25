@@ -2,23 +2,23 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { dummyInvoices } from "@/lib/dummy-invoices";
-import { notionPageIdSchema } from "@/lib/invoice-schema";
-import type { Invoice } from "@/types/invoices";
+import { getInvoice } from "@/lib/notion/invoices";
 
 import { InvoiceSkeleton } from "./_components/invoice-skeleton";
 import { InvoiceView } from "./_components/invoice-view";
 
-export const metadata: Metadata = {
-  title: "견적서",
-};
-
-// 더미 견적서 조회: ID 형식이 틀리거나 없는 ID면 null
-// TODO(Task 009): getInvoice로 교체
-function getDummyInvoice(id: string): Invoice | null {
-  const parsed = notionPageIdSchema.safeParse(id);
-  if (!parsed.success) return null;
-  return dummyInvoices.find((invoice) => invoice.id === parsed.data) ?? null;
+// 탭 제목에 견적서 번호를 넣는다. getInvoice는 React.cache라 페이지 본문과 같은 요청 안에서 노션을 다시 조회하지 않는다
+export async function generateMetadata({
+  params,
+}: PageProps<"/invoice/[notionPageId]">): Promise<Metadata> {
+  const { notionPageId } = await params;
+  try {
+    const invoice = await getInvoice(notionPageId);
+    return { title: invoice ? `견적서 ${invoice.invoiceNumber}` : "견적서" };
+  } catch {
+    // 조회 실패는 본문 렌더링이 error.tsx로 처리한다. 제목만 기본값으로 둔다
+    return { title: "견적서" };
+  }
 }
 
 // 견적서 조회 페이지: params는 런타임 데이터이므로 Suspense 안에서만 접근한다
@@ -34,8 +34,9 @@ export default function InvoicePage({
   );
 }
 
-function InvoiceContent({ notionPageId }: { notionPageId: string }) {
-  const invoice = getDummyInvoice(notionPageId);
+// 노션 조회: 없는 견적서면 null → 404 화면, 조회 실패는 throw → error.tsx (D8: 요청마다 조회)
+async function InvoiceContent({ notionPageId }: { notionPageId: string }) {
+  const invoice = await getInvoice(notionPageId);
   if (!invoice) notFound();
 
   return <InvoiceView invoice={invoice} />;
