@@ -2,7 +2,7 @@ import { siteConfig } from "@/config/site";
 import { formatDate, formatText } from "@/lib/format";
 import type { Invoice } from "@/types/invoices";
 
-import { InvoiceStatusBadge } from "./invoice-status-badge";
+import { InvoiceStatusBadge } from "@/components/common/invoice-status-badge";
 
 type InvoiceHeaderProps = {
   invoice: Invoice;
