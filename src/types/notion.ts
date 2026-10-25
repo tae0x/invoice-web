@@ -18,6 +18,7 @@ export type NotionTitleProperty = NotionPropertyOf<"title">;
 export type NotionRichTextProperty = NotionPropertyOf<"rich_text">;
 export type NotionDateProperty = NotionPropertyOf<"date">;
 export type NotionSelectProperty = NotionPropertyOf<"select">;
+export type NotionStatusProperty = NotionPropertyOf<"status">;
 export type NotionNumberProperty = NotionPropertyOf<"number">;
 export type NotionRelationProperty = NotionPropertyOf<"relation">;
 export type NotionFormulaProperty = NotionPropertyOf<"formula">;
@@ -37,13 +38,14 @@ export type InvoicePageProperties = PropertiesByNotionName<
     clientName: NotionRichTextProperty;
     issueDate: NotionDateProperty;
     validUntil: NotionDateProperty;
-    status: NotionSelectProperty;
+    // 실제 DB는 Status 타입 (매퍼는 Select도 허용)
+    status: NotionStatusProperty;
     totalAmount: NotionNumberProperty;
     items: NotionRelationProperty;
   }
 >;
 
-// Items DB 페이지 속성 (역방향 Relation `Invoices`는 읽지 않아 제외)
+// Items DB 페이지 속성 (역방향 Relation `Invoices`는 항목 조회 필터에만 쓰고 값은 읽지 않는다)
 export type ItemPageProperties = PropertiesByNotionName<
   typeof NOTION_ITEM_PROPERTIES,
   {
@@ -51,8 +53,9 @@ export type ItemPageProperties = PropertiesByNotionName<
     quantity: NotionNumberProperty;
     unitPrice: NotionNumberProperty;
     amount: NotionFormulaProperty;
+    invoices: NotionRelationProperty;
   }
 >;
 
-// TODO(Task 008): SDK 응답의 `properties`는 Record<string, 속성 union>이므로
-// 위 타입으로 단언하지 말고 매퍼에서 속성 존재와 `type`을 런타임에 확인해 좁힌다
+// 위 두 타입은 기대하는 속성 구조의 명세다. SDK 응답의 `properties`는 Record<string, 속성 union>이므로
+// 이 타입으로 단언하지 않고 `src/lib/notion/mappers.ts`가 속성 존재와 `type`을 런타임에 확인해 좁힌다
