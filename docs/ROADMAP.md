@@ -3,7 +3,7 @@
 노션에서 작성한 견적서를 고유 링크 하나로 웹에서 확인하고 PDF로 저장하게 하는 MVP를 완성합니다.
 
 **📅 최종 업데이트**: 2026-10-25
-**📊 진행 상황**: Phase 2 완료, Phase 3 대기 중 (6/14 Tasks 완료, 43%)
+**📊 진행 상황**: Phase 3 완료, Phase 4 대기 중 (11/14 Tasks 완료, 79%). Task 009의 일부 확인(노션 값 수정 후 반영, 항목 0개·빈 속성·26개 이상·긴 값 실데이터)은 해당 견적서를 노션에 만든 뒤 진행
 
 ## 개요
 
@@ -18,14 +18,14 @@ Invoice Web은 견적서를 발행하는 프리랜서·소규모 기업과 견�
 
 기준 문서: `docs/PRD.md` (v1.0 MVP), `docs/architecture.md`, `CLAUDE.md`
 
-## 현재 상태 (Phase 2 완료 시점)
+## 현재 상태 (Phase 3 완료 시점)
 
 이미 구현되어 있으므로 이 로드맵에서 다시 계획하지 않는 항목입니다.
 
-- Next.js 16.4 / React 19.3 / TypeScript 5 / Tailwind v4 / shadcn(Base UI, `base-nova`) 기반 프로젝트 구성
+- Next.js 16.4.3 / React 19.3 / TypeScript 5 / Tailwind v4 / shadcn(Base UI, `base-nova`) 기반 프로젝트 구성
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true`
 - 루트 레이아웃(`src/app/layout.tsx`): ThemeProvider(next-themes, 다크 모드), TooltipProvider, Toaster(sonner)
-- `(marketing)` 레이아웃: `SiteHeader`(테마 토글 포함) + `SiteFooter`, 서비스 안내 홈(`/`)
+- `(marketing)` 레이아웃: `SiteHeader`(테마 토글 포함) + `SiteFooter`, 서비스 안내(`/invoice/guide`, `/`는 여기로 리디렉트)
 - 전역 `loading.tsx`, `error.tsx`(`retry` prop), `global-error.tsx`, `not-found.tsx`
 - 공통 컴포넌트: `Container`, `Logo`, `PageHeader`, `ThemeToggle`
 - shadcn ui: alert, badge, button, card, dropdown-menu, empty, navigation-menu, separator, sheet, skeleton, sonner, spinner, table, tooltip
@@ -40,21 +40,38 @@ Phase 1(Task 002~003)에서 완료된 것:
 - 견적서 라우트 골격 (Task 002): `src/app/invoice/layout.tsx`(독립 레이아웃, 마케팅 헤더·푸터 없음), `src/app/invoice/[notionPageId]/`의 `page.tsx`·`loading.tsx`·`error.tsx`·`not-found.tsx`, `_components/invoice-skeleton.tsx`. 빌드에서 `/invoice/[notionPageId]`는 Partial Prerender(◐)
 - 견적서 전용 컴포넌트 위치: 라우트 내 비공개 폴더 `_components/` (Task 004 결정 사항의 선례)
 - 공용 타입 (Task 003): `src/types/invoices.ts`, `notion.ts`(`@notionhq/client` SDK 타입 재사용), `pdf.ts`
-- 공용 상수·유틸 (Task 003): `src/lib/constants.ts`, `format.ts`(KRW·날짜 포맷, 잘못된 날짜는 `-`), `invoice-schema.ts`(페이지 ID zod 스키마, 하이픈 없는 소문자로 정규화), `dummy-invoices.ts`(가짜 ID의 더미 데이터)
+- 공용 상수·유틸 (Task 003): `src/lib/constants.ts`, `format.ts`(KRW·날짜 포맷, 잘못된 날짜는 `-`), `invoice-schema.ts`(페이지 ID zod 스키마, 하이픈 없는 소문자로 정규화), `dummy-invoices.ts`(가짜 ID의 더미 데이터. Phase 3 통합에서 사용처가 없어져 삭제함)
 - 노션 속성명 매핑 (Task 003): 서버 전용 `src/lib/notion/properties.ts`
 - `@notionhq/client` 5.x(`^5.28.0`) 설치 (Task 003에서 타입 재사용을 위해 먼저 설치)
 
 Phase 2(Task 004~006)에서 완료된 것:
 
-- 견적서 화면 (Task 004): `_components/`의 `invoice-view.tsx`가 `invoice-header`·`invoice-status-badge`·`invoice-client`·`invoice-items-table`·`invoice-summary`를 조합. `page.tsx`는 더미 데이터로 조회 (`TODO(Task 009)`에서 `getInvoice`로 교체). 발행자 정보는 `siteConfig.issuer`
+- 견적서 화면 (Task 004): `_components/`의 `invoice-view.tsx`가 `invoice-header`·`invoice-status-badge`·`invoice-client`·`invoice-items-table`·`invoice-summary`를 조합. `page.tsx`는 `getInvoice`로 노션 실데이터를 조회 (Task 009). 발행자 정보는 `siteConfig.issuer`
 - 상태 화면 (Task 005): 견적서 형태의 `invoice-skeleton.tsx`, 404·에러 화면(`h1` 제목, `retry` 버튼)
 - PDF (Task 006): `@react-pdf/renderer` 설치, Noto Sans KR 정적 TTF(`src/lib/pdf/fonts/`)와 등록(`src/lib/pdf/fonts.ts`), A4 문서 `src/lib/pdf/invoice-document.tsx`, 다운로드 버튼 `download-pdf-button.tsx`
 
+Phase 3 트랙 A(Task 007~008, 노션 API)에서 완료된 것:
+
+- Next.js 16.4.3 보안 업데이트 (`next`·`eslint-config-next` 16.4.3 고정, `npm audit --omit=dev` 0건)
+- 환경·클라이언트 (Task 007): `src/lib/notion/env.ts`(zod, 첫 호출 시 지연 검증, 오류 메시지에 변수 이름만), `client.ts`(`server-only` 싱글턴, 타임아웃 10초·SDK 재시도, 로그는 코드만). `server-only` 패키지 설치
+- 조회 로직 (Task 008): `src/lib/notion/mappers.ts`(속성 존재·`type`을 런타임에 확인), `invoices.ts`의 `getInvoice(pageId): Promise<Invoice | null>`(`React.cache`, 요청 간 캐시 없음)
+- 노션 요청 수(실측): 정상 견적서는 서버 기동 후 첫 조회 3회(페이지·Invoices 데이터 소스 스키마·항목 쿼리), 이후 2회(스키마의 Items 데이터 소스 ID를 모듈 메모리에 재사용). 항목 0개면 1회, 형식이 틀린 ID는 0회
+- `src/proxy.ts`(D12): 형식이 틀린 ID는 정적 404 라우트 `src/app/invoice/invalid-id/`로 `status: 404`와 함께 rewrite (개발·프로덕션 모두 HTTP 404, URL 유지). `guide`, 형식이 맞는 ID는 통과 (더미용 `test-N` 예외는 Task 009에서 제거해 `/invoice/test-1`은 HTTP 404)
+- 견적서 404 화면의 탭 제목(`metadata` + React `<title>`)과 `noindex`(Next.js 자동 주입)
+- 견적서 페이지 연동 (Task 009): `page.tsx`가 `getInvoice`를 Suspense 안에서 호출(null은 `notFound()`, throw는 `error.tsx`). `generateMetadata`로 탭 제목 `견적서 <번호>` 적용(`React.cache`로 페이지와 중복 조회 없음, 빌드 ◐ 유지)
+
+Phase 3 트랙 B·통합(Task 010)에서 완료된 것:
+
+- PDF API (Task 010): `/api/generate-pdf`는 견적서 ID만 받아 `getInvoice`로 노션을 재조회한다(더미 폴백 제거). PDF 렌더링·헤더 모듈(`src/lib/pdf/render-invoice-pdf.tsx`, `response-headers.ts`)과 `generatePdfRequestSchema`, `outputFileTracingIncludes` 설정은 트랙 B에서 만들었다
+
+Phase 3 Task 011에서 완료된 것:
+
+- 노션 Invoices DB에 `견적서 URL` 수식 속성(`"http://localhost:3000/invoice/" + id()`)을 추가하고, 값이 `http://localhost:3000/invoice/<하이픈 없는 32자리 ID>`로 나오는 것과 그 URL을 그대로 열면 견적서가 표시되는 것을 확인했다. 설정 방법은 `docs/notion-setup.md`
+
 아직 없는 것:
 
-- `/api/generate-pdf` Route Handler는 없음 (다운로드 버튼은 Task 010 전까지 실패 토스트가 정상 동작)
-- `src/lib/notion/` 클라이언트·조회 로직, `src/proxy.ts` 없음
-- 앱 코드는 `NEXT_PUBLIC_SITE_URL`만 참조하고, 노션 환경 변수 검증 로직과 `.env.example` 항목은 없음
+- Task 009의 노션 데이터가 필요한 확인(값 수정 후 반영, 항목 0개·빈 속성·26개 이상·긴 항목명 실데이터)
+- `.env.example`의 노션 변수 항목은 도구 권한상 직접 수정하지 못해 사용자 반영 대기 (`NOTION_API_KEY=`, `NOTION_DATABASE_ID=`)
 - 테스트 러너 없음 (검증은 `npx tsc --noEmit`, `npm run lint`, `npm run build`, Playwright MCP 시나리오로 수행)
 - `/tasks` 디렉토리 없음
 
@@ -86,7 +103,7 @@ PRD에서 정해지지 않았거나 서로 맞지 않던 항목을 프로젝트 
 | D6 | 총 금액·통화·VAT | 노션 `총 금액` Number 값을 그대로 표시한다. 통화는 원(KRW)이고 VAT는 별도 표기하지 않는다(입력 값이 최종 금액). 항목의 `금액`은 항목 행 표시용이다 | PRD 데이터 모델의 출처를 따른다. 합계 불일치 검증은 MVP 범위 밖이며 발행자가 노션에서 관리한다 | 003, 004, 008 |
 | D7 | 발행자(회사) 정보 | `src/config/site.ts`에 상수로 두고 화면과 PDF가 공통으로 쓴다. 상호·이메일만 `siteConfig.issuer`에 둔다 | `site.ts`가 사이트 정보의 단일 출처다. 노션 DB에 속성을 추가하지 않는다 | 004, 006 |
 | D8 | 데이터 캐싱 | 캐시하지 않고 매 요청 조회한다. 동적 `params`와 조회는 Suspense 경계 안에 둔다. 요청 수가 문제되면 Task 012에서 `use cache` + 짧은 `cacheLife`를 재검토한다 | PRD가 "실시간 조회"를 요구하고 노션 수정이 즉시 반영돼야 한다. 견적서 1건 조회는 Notion 요청 제한(평균 초당 3회)에 여유가 있다 | 008, 009, 012 |
-| D9 | 접근 범위 검증 | 조회한 페이지의 부모 DB가 `NOTION_DATABASE_ID`와 일치할 때만 표시한다. 항목 DB ID 환경 변수는 추가하지 않는다(Relation의 항목 페이지 ID로 조회). 부모 필드의 실제 형태는 Task 007에서 공식 문서로 확인한다 | Integration에 공유된 다른 노션 페이지가 URL 추측으로 노출되는 것을 막는다 | 007, 008 |
+| D9 | 접근 범위 검증 | 조회한 페이지의 부모 DB가 `NOTION_DATABASE_ID`와 일치할 때만 표시한다. 항목 DB ID 환경 변수는 추가하지 않는다(Items 데이터 소스 ID는 Invoices 데이터 소스 스키마의 `항목` Relation 설정에서 읽는다). 페이지 부모는 `{ type: "data_source_id", data_source_id, database_id }` 형태이며 `parent.database_id`를 비교한다(Task 007·008에서 확인) | Integration에 공유된 다른 노션 페이지가 URL 추측으로 노출되는 것을 막는다 | 007, 008 |
 | D10 | 라우트 위치·세그먼트명 | `src/app/invoice/[notionPageId]/`에 두고 `(marketing)` 그룹 밖의 독립 레이아웃(`src/app/invoice/layout.tsx`, 마케팅 헤더·푸터 없음)을 쓴다 | 클라이언트가 링크로 여는 문서형 화면이라 서비스 내비게이션이 필요 없다. URL 파라미터 이름을 PRD의 `notionPageId`와 맞춘다 | 002 |
 | D11 | 노션 페이지 본문(블록) | 사용하지 않는다(`blocks.children.list` 호출 없음) | 데이터 모델이 속성과 Relation만 쓴다. 요청 수도 줄어든다 | 008 |
 | D12 | 404 처리 방식 | 같은 URL에서 404 안내 화면을 렌더링한다(리디렉션하지 않음). ID 형식이 잘못된 요청은 `src/proxy.ts`가 스트리밍 전에 검사해 HTTP 404를 돌려준다. 형식은 맞지만 없는 견적서는 페이지에서 `notFound()`로 처리한다(이 경우 상태 코드는 200 + `noindex`) | PRD의 "자동 리디렉션"은 별도 경로 이동이 아니라 404 화면 자동 표시로 해석한다. `loading.tsx`가 있으면 스트리밍이 먼저 시작되어 이후 `notFound()`는 상태 코드를 404로 바꾸지 못한다(Next.js `loading.md` "Status codes"). 존재 여부 확인은 노션 조회가 필요해 proxy에서 하지 않는다(proxy는 빠른 검사만) | 002, 005, 008 |
@@ -103,7 +120,7 @@ PRD에서 정해지지 않았거나 서로 맞지 않던 항목을 프로젝트 
 | 클라이언트명 | Text (rich_text) | `clientName` | |
 | 발행일 | Date | `issueDate` | 시간 없음 |
 | 유효기간 | Date | `validUntil` | 시간 없음 |
-| 상태 | Select | `status` | `대기` / `승인` / `거절` |
+| 상태 | Status | `status` | `대기` / `승인` / `거절`. 실제 DB는 Status 타입(Task 008에서 확인). 매퍼는 Select도 허용 |
 | 총 금액 | Number | `totalAmount` | 원 단위 정수 |
 | 항목 | Relation → Items | `items` | 양방향 관계 |
 
@@ -115,7 +132,7 @@ PRD에서 정해지지 않았거나 서로 맞지 않던 항목을 프로젝트 
 | 수량 | Number | `quantity` | |
 | 단가 | Number | `unitPrice` | 원 단위 정수 |
 | 금액 | Formula (`수량 × 단가`) | `amount` | |
-| Invoices | Relation → Invoices | (읽지 않음) | 양방향 관계의 역방향 |
+| Invoices | Relation → Invoices | 항목 조회 필터용 | 양방향 관계의 역방향. 값은 읽지 않고 `dataSources.query` 필터에만 쓴다 |
 
 추가로 확인이 필요한 기술 사항 (사용자 결정이 아니라 작업 중 문서 확인 대상):
 
@@ -217,77 +234,85 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
   - ✅ 더미 데이터로 PDF 생성 경로 확인: 화면에 연결된 API가 없으므로 scratchpad 스크립트로 더미 5건과 40항목 데이터를 직접 렌더링해 확인했다. 다운로드 버튼은 Task 010 전까지 `/api/generate-pdf`가 404라서 실패 토스트가 정상 동작이다 (실데이터 연동은 Task 010)
   - ✅ 수락 기준: 더미 데이터로 생성한 PDF에서 한글이 깨지지 않고 웹 화면과 같은 정보가 담김
 
-### Phase 3: 핵심 기능 구현
+### Phase 3: 핵심 기능 구현 ✅
 
-- **Task 007: Notion 연동 환경과 서버 전용 클라이언트 구성 (F001)**
+- **Task 007: Notion 연동 환경과 서버 전용 클라이언트 구성 (F001)** ✅ - 완료
   - 크기: S / 의존: Task 001(D9)
-  - 사전 확인: context7 MCP로 `@notionhq/client` 최신 버전과 Notion API 버전 변경 사항 확인
-  - `@notionhq/client` 설치 (Task 003에서 5.x(`^5.28.0`) 선행 설치 완료, 클라이언트 모듈 작성은 이 Task)
-  - 환경 변수 `NOTION_API_KEY`, `NOTION_DATABASE_ID`는 `.env.local`에 설정 완료 (D9에 따라 항목 DB ID 변수는 추가하지 않음). `.env.example`에 예시 추가, `NODE_ENV`는 Next.js가 설정하므로 적지 않음
-  - 환경 변수 누락 시 명확한 오류를 내는 검증 로직 (zod)
-  - `src/lib/notion/` 클라이언트 모듈 작성, 클라이언트 번들에 포함되지 않도록 서버 전용으로 제한 (`NEXT_PUBLIC_` 접두사 사용 금지). 클라이언트 모듈 파일에 `import "server-only"`를 넣는다
-  - 수락 기준: 서버에서 노션 DB 접근 성공, API 키가 클라이언트 번들에 노출되지 않음
+  - ✅ 사전 확인: context7 MCP로 `@notionhq/client` 5.28.0 문서 확인 (기본 `Notion-Version` 2025-09-03, 데이터 소스 API, 페이지 부모 `{ type: "data_source_id", data_source_id, database_id }`)
+  - ✅ 선행: Next.js 16.4.3 보안 업데이트 (`next`·`eslint-config-next` 16.4.3 고정, critical 3건 해소, `npm audit --omit=dev` 0건, 빌드 ◐ 유지)
+  - ✅ `@notionhq/client` 5.x는 Task 003에서 설치 완료, `server-only` 설치
+  - ✅ 환경 변수 `NOTION_API_KEY`, `NOTION_DATABASE_ID`는 `.env.local`에 설정 완료 (D9에 따라 항목 DB ID 변수는 추가하지 않음). `.env.example` 예시 추가는 도구 권한상 직접 수정하지 못해 사용자 반영 대기
+  - ✅ `src/lib/notion/env.ts`: zod 검증(`NOTION_DATABASE_ID`는 `notionPageIdSchema`로 정규화), 첫 호출 시 지연 검증(환경 변수 없이도 `npm run build` 통과), 오류 메시지에는 변수 이름만 적고 값은 넣지 않음
+  - ✅ `src/lib/notion/client.ts`: `import "server-only"`, `getNotionClient()` 싱글턴 (타임아웃 10초, 재시도 2회, SDK 로그는 코드·시도 횟수만)
+  - ✅ 수락 기준: 서버에서 노션 DB 접근 성공, `.next/static`에서 `NOTION_API_KEY`·`ntn_`·`secret_`·`api.notion.com` 검색 0건, 클라이언트 컴포넌트에서 `lib/notion/*`을 import하면 `server-only` 빌드 오류
 
-- **Task 008: 견적서 조회 로직 구현 (F001, F011)**
+- **Task 008: 견적서 조회 로직 구현 (F001, F011)** ✅ - 완료
   - 크기: M / 의존: Task 003, 007, Task 001(D3, D6, D8, D9, D11, D12)
-  - 사전 확인: `01-getting-started/06-fetching-data.md`, `08-caching.md`, `10-error-handling.md`, `16-proxy.md`, `03-file-conventions/proxy.md`, `03-file-conventions/loading.md`("Status codes"), `04-functions/not-found.md`, `cacheLife.md`
-  - (D12) `src/proxy.ts` 작성: `/invoice/:notionPageId` 요청의 ID 형식을 Task 003의 검증 규칙으로 검사하고, 잘못된 형식이면 HTTP 404 응답(또는 not-found 경로로 rewrite). `matcher`는 `/invoice/:path*`로 한정하고 노션 조회는 하지 않는다
-  - `getInvoice(pageId)` 구현: ID 형식 검증 → 노션 페이지 조회 → (D9) 부모 DB 일치 검증 → 속성 매핑
-  - 견적 항목 조회: Relation으로 연결된 항목 페이지들을 조회해 매핑 (Relation 값이 많을 때의 페이지네이션 처리 포함, 요청 수 최소화). 페이지 조회 응답의 relation 값이 잘릴 수 있으므로 `pages.properties.retrieve`로 나눠 받아야 하는지 공식 문서로 확인
-  - 노션 날짜 값에 시간이 포함된 경우의 처리 규칙 결정 (D3은 시간 없는 `YYYY-MM-DD` 기준)
-  - Task 002 리뷰 제안 반영: 견적서 404 화면의 탭 제목과 `noindex` 지정
-  - (D6) 총 금액 처리 규칙 적용, (D11) 본문 블록 처리
-  - 오류 분류: 잘못된 ID 형식·존재하지 않는 페이지·다른 DB의 페이지 → `notFound()`, 인증 오류·요청 제한·네트워크 오류 → 예외로 에러 바운더리에 전달 (내부 오류 메시지를 화면에 노출하지 않음)
-  - 필수 속성 누락 시 처리 규칙 (빈 값 표시 또는 오류)
-  - (D8) 캐싱 정책 적용
-  - 수락 기준: 실제 노션 견적서로 도메인 객체가 정확히 생성되고 오류 케이스가 의도대로 분류됨
-  - 테스트 체크리스트 (Playwright MCP, 개발 서버):
-    - 정상 견적서 ID로 접근 시 노션 값과 화면 값(번호, 클라이언트명, 날짜, 항목, 금액) 일치
-    - 형식이 잘못된 ID(`/invoice/abc`) 접근 시 404 화면과 404 상태 코드 (proxy 처리)
-    - 형식은 맞지만 존재하지 않는 ID 접근 시 404 화면과 `noindex` 메타 태그 (상태 코드는 200, D12)
-    - (D9 적용 시) Integration에 공유된 다른 DB의 페이지 ID 접근 시 404 화면
-    - 항목 0개 견적서, 필수 속성이 비어 있는 견적서 표시 확인
-    - 잘못된 API 키로 실행 시 에러 화면과 `retry` 버튼 표시, 내부 오류 메시지 미노출
+  - ✅ 사전 확인: `01-getting-started/06-fetching-data.md`, `08-caching.md`, `10-error-handling.md`, `16-proxy.md`, `03-file-conventions/proxy.md`, `03-file-conventions/loading.md`("Status codes"), `04-functions/not-found.md`, `cacheLife.md`
+  - ✅ (D12) `src/proxy.ts`: `matcher`는 `/invoice/:path*`, 첫 세그먼트가 `guide`·`test-N`(Task 009에서 제거)·형식이 맞는 ID면 통과, 그 외는 정적 404 라우트 `src/app/invoice/invalid-id/`(`notFound()`만 호출, ○)로 `status: 404`와 함께 rewrite해 HTTP 404와 견적서 404 화면을 준다(URL 유지). 노션 조회 없음. 견적서 라우트에 `status: 404`만 주는 방식은 개발 서버에서만 404이고 프로덕션에서는 PPR 셸 때문에 200이며, 정적 404 라우트만 쓰면 반대로 개발 서버(루트 `loading.tsx`가 먼저 스트리밍)에서 200이라 둘을 함께 쓴다
+  - ✅ `getInvoice(pageId)` (`src/lib/notion/invoices.ts`): ID 형식 검증 → `pages.retrieve` → 보관·휴지통이면 null → (D9) `parent.database_id`와 `NOTION_DATABASE_ID` 비교 → 속성 매핑
+  - ✅ 견적 항목 조회(확정안): Items 데이터 소스를 `dataSources.query`로 한 번에 조회한다 (`{ property: "Invoices", relation: { contains: <견적서 ID> } }`, `page_size: 100`, `start_cursor`로 끝까지). Items 데이터 소스 ID는 Invoices 데이터 소스 스키마의 `항목` Relation 설정에서 읽어 모듈 메모리에 둔다. 결과는 견적서 `항목` Relation 순서로 다시 정렬한다. Relation이 25개를 넘으면(`has_more`) `pages.properties.retrieve`로 전체 ID를 이어 받는다. 항목이 0개면 쿼리를 생략한다
+  - ✅ 날짜 규칙: `date.start`를 쓰고 시간이 있으면 `Asia/Seoul` 달력 날짜(`YYYY-MM-DD`)로 바꾼다. `end`는 무시
+  - ✅ Task 002 리뷰 제안 반영: 견적서 404 화면의 탭 제목(`metadata`와 스트리밍 후 404용 React `<title>`), `noindex`는 Next.js가 자동 주입
+  - ✅ (D6) 총 금액은 노션 `총 금액` Number를 그대로 사용, 항목 `금액`은 수식 결과가 number일 때만 값. (D11) 본문 블록은 조회하지 않음
+  - ✅ 오류 분류: 잘못된 ID 형식·없는 페이지(`object_not_found`)·페이지가 아닌 ID(`validation_error`)·다른 DB의 페이지·보관/휴지통 페이지 → `null`(호출부에서 `notFound()`). 인증 오류·권한 부족·요청 제한(재시도 소진)·타임아웃·항목 쿼리 실패 → 코드와 HTTP 상태만 담은 오류로 throw (노션 메시지·응답 본문은 화면·로그에 남기지 않음)
+  - ✅ 필수 속성 누락 규칙: 오류가 아니라 빈 값 (문자열은 `""`, 날짜·숫자·상태는 `null`). 상태는 알려진 옵션만 쓰고 그 외는 `null`(D4)
+  - ✅ (D8) 요청 간 캐시 없음. 같은 요청 안의 중복 호출만 `React.cache`로 합침
+  - ✅ 수락 기준: 실제 노션 견적서(INV-2026-001)로 도메인 객체의 번호·클라이언트명·날짜·상태·항목 3개(순서 포함)·총 금액이 노션 값과 일치, 오류 케이스가 의도대로 분류됨 (임시 Route Handler로 확인 후 삭제)
+  - 테스트 결과 (페이지가 필요한 항목은 Task 009 체크리스트로 옮김):
+    - ✅ 형식이 잘못된 ID(`/invoice/abc`, `/invoice/abc/def`) 접근 시 견적서 404 화면과 404 상태 코드 (개발·프로덕션 서버)
+    - ✅ 형식은 맞지만 존재하지 않는 ID 접근 시 404 화면, 탭 제목, `noindex` 메타 태그 (상태 코드는 200, D12)
+    - ✅ (D9) Integration에 공유된 다른 DB(Items)의 페이지 ID, Invoices DB·데이터 소스 자체 ID → `getInvoice`가 `null`
+    - ✅ 빈 속성·속성 누락·시간 포함 날짜·알 수 없는 상태: 실제 페이지를 복제해 값을 비운 입력으로 매퍼 확인 (노션에 해당 견적서가 없어 실데이터 확인은 Task 009로)
+    - ✅ 잘못된 API 키·권한 부족·요청 제한·타임아웃·항목 쿼리 실패: 모의 노션 오류 응답으로 `getInvoice`가 코드·상태만 담은 오류를 던지는지 확인 (에러 화면 확인은 Task 009로)
 
-- **Task 009: 견적서 페이지 실데이터 연동 (F002)**
+- **Task 009: 견적서 페이지 실데이터 연동 (F002)** ✅ - 완료 (노션 데이터가 필요한 일부 확인은 아래 미완료 항목으로 남김)
   - 크기: S / 의존: Task 004, 005, 008
-  - 더미 데이터를 `getInvoice` 호출로 교체
-  - 동적 `params`와 데이터 조회를 Suspense 경계 안에 두어 `cacheComponents` prerender 오류 방지
-  - 브라우저 탭 제목에 견적서 번호 표시가 필요하면 `generateMetadata` 사용 (사전 확인: `04-functions/generate-metadata.md`, 데이터 중복 조회 방지)
-  - 수락 기준: `npm run build` 통과, 실제 견적서 URL에서 Phase 2와 같은 화면 표시
+  - 더미 데이터를 `getInvoice` 호출로 교체하고 `src/proxy.ts`의 `test-N` 예외, `page.tsx`의 `TEST_ID_PATTERN`, `src/app/api/generate-pdf/route.tsx`의 개발용 더미 폴백을 함께 제거
+  - ✅ 더미 제거: `page.tsx`의 `getDummyInvoice`·`TEST_ID_PATTERN`, `src/proxy.ts`의 `test-N` 예외, `route.tsx`의 `NODE_ENV` 더미 폴백과 `dummyInvoices` import를 제거하고 `getInvoice`만 쓴다. `dummy-invoices.ts`는 사용처가 없어 삭제했다
+  - ✅ 동적 `params`와 데이터 조회를 Suspense 경계 안에 두어 `cacheComponents` prerender 오류 방지 (`npm run build` 통과, 라우트는 ◐ 유지)
+  - ✅ 탭 제목에 견적서 번호 표시: `generateMetadata`(`견적서 INV-2026-001 | Invoice Web`). `getInvoice`가 `React.cache`라 페이지와 중복 조회하지 않음(노션 요청 첫 조회 3회·이후 2회 그대로). 조회 실패 시 제목은 `견적서`로 두고 본문이 `error.tsx`로 처리. 빌드 오류·상태 코드 충돌 없음(없는 견적서는 D12대로 200 + `noindex`)
+  - ✅ 수락 기준: `npm run build` 통과, 실제 견적서 URL에서 Phase 2와 같은 화면 표시
   - 테스트 체크리스트 (Playwright MCP):
-    - 실제 견적서 URL 접근 시 로딩 skeleton 후 견적서 표시
-    - 노션에서 값 수정 후 재접속 시 D8 정책대로 반영되는지 확인
-    - 375px/1280px 폭에서 실데이터(긴 항목명, 큰 금액) 레이아웃 확인
+    - ✅ 실제 견적서 URL 접근 시 로딩 skeleton 후 견적서 표시 (프로덕션 서버 셸에 skeleton과 로딩 문구 포함 확인)
+    - ✅ 정상 견적서 ID(INV-2026-001)로 접근 시 노션 CSV 값과 화면 값(번호, 클라이언트명, 날짜, 상태, 항목 3개, 총 금액 ₩5,000,000) 일치. 하이픈 포함·대문자 ID도 같은 견적서. `/invoice/test-1`은 404
+    - ✅ (D9) 다른 DB의 페이지 ID(Items 항목 페이지, DB·데이터 소스 ID) 접근 시 404 화면
+    - 항목 0개 견적서, 필수 속성이 비어 있는 견적서, (가능하면) 항목 26개 이상 견적서의 실데이터 표시와 항목 순서 확인. 노션에 해당 견적서를 먼저 만들어야 함 (Task 008에서 이동)
+    - ✅ 잘못된 API 키(프로세스 환경 변수로 덮어씀)로 실행 시 에러 화면과 `retry` 버튼 표시, 화면·HTML에 내부 오류 메시지 미노출 (프로덕션. 개발 서버의 HTML에는 Next.js가 오류 문자열을 싣는 것을 확인)
+    - 노션에서 값 수정 후 재접속 시 D8 정책대로 반영되는지 확인 (미확인: 노션 데이터를 수정하지 않음. 캐시를 쓰지 않는 구조로만 확인)
+    - ✅ 375px/768px/1280px 폭에서 가로 넘침 없음 (실데이터가 항목 3개의 짧은 값뿐이라 긴 항목명·큰 금액은 실데이터로 확인하지 못함)
 
-- **Task 010: PDF 생성 API 실데이터 연동 (F003)**
+- **Task 010: PDF 생성 API 실데이터 연동 (F003)** ✅ - 완료
   - 크기: M / 의존: Task 006, 008, Task 001(D1, D2)
   - 사전 확인: `01-getting-started/15-route-handlers.md`, `03-file-conventions/route.md`, `05-config/01-next-config-js/serverExternalPackages.md`
-  - 폰트 번들 확인: `src/lib/pdf/fonts/`의 TTF 2종(약 6MB씩)을 `process.cwd()` 기준 경로로 읽으므로, Vercel 함수 번들에 포함되는지 확인하고 빠지면 `outputFileTracingIncludes`로 포함한다 (Task 013 배포 검증에서도 확인)
-  - `src/app/api/generate-pdf/route.tsx` 생성 (Task 002에서 제외한 골격 포함)
-  - D2에 따라 Route Handler는 견적서 ID만 입력으로 받아 zod로 형식을 검증하고, 서버에서 `getInvoice`를 재사용
-  - PDF 요청 타입(`src/types/pdf.ts`)은 zod 스키마에서 파생(`z.infer`)해 스키마와 타입을 한 곳으로 맞춘다
-  - 응답 헤더: `Content-Type: application/pdf`, 견적서 번호 기반 파일명의 `Content-Disposition` (한글 파일명 인코딩 처리)
-  - 오류 응답: 존재하지 않는 견적서 404, 생성 실패 500 (버튼은 토스트로 안내)
+  - ✅ 폰트 번들 확인: `src/lib/pdf/fonts/`의 TTF 2종(약 6MB씩)을 `process.cwd()` 기준 경로로 읽으므로, `next.config.ts`의 `outputFileTracingIncludes`(키 `/api/generate-pdf`, 값 `src/lib/pdf/fonts/**`)로 포함을 보장했다. 빌드 결과 `.next/server/app/api/generate-pdf/route.js.nft.json`에 TTF 2종이 들어 있음을 확인했다 (설정 없이도 Turbopack이 추적해 포함하지만 명시해 둔다. Vercel 배포 환경 확인은 Task 013)
+  - ✅ PDF 모듈: `src/lib/pdf/render-invoice-pdf.tsx`(`renderInvoicePdf(invoice): Promise<Buffer>`)와 `response-headers.ts`(파일명 정리, `Content-Disposition`·`Content-Type`·`Cache-Control: no-store` 헤더 순수 함수). `fonts.ts`·`invoice-document.tsx`·`render-invoice-pdf.tsx`에 `server-only` 가드 (클라이언트 import 시 빌드 실패 확인)
+  - ✅ `src/app/api/generate-pdf/route.tsx` 생성 (Task 002에서 제외한 골격 포함). POST만 구현하고 Node 기본 런타임을 쓴다
+  - ✅ D2에 따라 Route Handler는 견적서 ID만 입력으로 받아 zod로 형식을 검증하고(알 수 없는 키는 무시), 서버에서 `getInvoice`를 재사용. 더미 폴백은 Task 009에서 제거했다
+  - ✅ PDF 요청 타입(`src/types/pdf.ts`)은 zod 스키마(`generatePdfRequestSchema`, `src/lib/invoice-schema.ts`)에서 파생(`z.input`, `import type`만 사용)해 스키마와 타입을 한 곳으로 맞춘다
+  - ✅ 응답 헤더 생성 함수: `Content-Type: application/pdf`, 견적서 번호 기반 파일명의 `Content-Disposition` (한글 파일명 인코딩 처리). Route Handler에서 사용하는 연결은 통합 단계
+  - ✅ 오류 응답: 잘못된 JSON·ID 형식 400, 존재하지 않는 견적서 404, 생성 실패 500 (본문은 일반 문장, 내부 메시지 미포함. 버튼은 토스트로 안내)
   - Node.js 런타임에서 동작 확인, PDF 생성 시간과 응답 크기 확인
-  - 수락 기준: 실제 견적서로 PDF 다운로드 성공, 화면과 PDF의 금액·항목 일치
+    - ✅ 더미 5건·40항목 기준 임시 Route Handler(삭제함)로 프로덕션 빌드에서 확인: 생성 7~60ms(첫 호출 포함), 응답 12~23KB (폰트는 사용 글리프만 서브셋 포함). 노션 실데이터(INV-2026-001, 항목 3개) 기준: 프로덕션 서버에서 POST 약 0.6~1.0초(노션 조회 약 0.5초 포함), 응답 14.7KB
+  - ✅ 수락 기준: 실제 견적서로 PDF 다운로드 성공, 화면과 PDF의 금액·항목 일치 (PDF를 이미지로 변환해 확인)
   - 테스트 체크리스트 (Playwright MCP):
-    - 다운로드 버튼 클릭 시 다운로드 이벤트 발생, 파일명과 MIME 타입 확인
-    - 생성 중 버튼 비활성화와 스피너 표시, 연속 클릭 시 요청 1회만 발생
-    - 다운로드 후 같은 페이지 유지, 재다운로드 가능
-    - 존재하지 않는 ID로 API 직접 호출 시 404 응답
-    - (D2) 클라이언트가 임의 데이터를 보내도 PDF 내용이 바뀌지 않음
-    - API 실패를 강제했을 때 오류 토스트 표시
+    - ✅ 다운로드 버튼 클릭 시 다운로드 이벤트 발생, 파일명과 MIME 타입 확인 (더미 `test-1`·`2`·`4`·`5`, 개발 서버)
+    - ✅ 생성 중 버튼 비활성화와 스피너 표시, 연속 클릭 시 요청 1회만 발생
+    - ✅ 다운로드 후 같은 페이지 유지, 재다운로드 가능
+    - ✅ 존재하지 않는 ID로 API 직접 호출 시 404 응답
+    - ✅ (D2) 클라이언트가 임의 데이터를 보내도 PDF 내용이 바뀌지 않음 (`pdftotext` 비교)
+    - ✅ API 실패를 강제했을 때 오류 토스트 표시 (Playwright 요청 가로채기)
+    - ✅ 노션 실데이터 견적서로 위 항목을 다시 확인 (프로덕션 서버: 다운로드 이벤트, `INV-2026-001.pdf`, `application/pdf`, 생성 중 스피너·연속 클릭 시 요청 1회, 같은 페이지 유지·재다운로드, 없는 ID 404, 임의 필드를 보내도 PDF 텍스트 동일)
 
-- **Task 011: 견적서 URL 생성 지원 (F010)**
+- **Task 011: 견적서 URL 생성 지원 (F010)** ✅ - 완료
   - 크기: S / 의존: Task 009, Task 001(D5)
-  - D5가 노션 쪽 생성이면: 노션 수식 속성 설정 방법(사이트 URL + 페이지 ID)을 문서화하고, 앱은 하이픈 포함·미포함 페이지 ID URL을 모두 처리하는지 확인
+  - ✅ D5가 노션 쪽 생성이면: 노션 수식 속성 설정 방법(사이트 URL + 페이지 ID)을 `docs/notion-setup.md`에 문서화하고, 앱이 하이픈 포함·미포함·대문자 ID와 끝의 `/`·쿼리가 붙은 URL을 같은 견적서로 여는지 확인했다 (개발·프로덕션 모두 200, 같은 화면·같은 탭 제목)
   - D5가 앱 기능이면: 확정된 범위로 별도 작업 명세를 만든 뒤 진행 (PRD에 화면 정의 없음)
-  - `NEXT_PUBLIC_SITE_URL`(배포 도메인)과 노션에 들어가는 URL 기준이 일치하는지 확인
-  - 수락 기준: 노션에서 얻은 URL을 그대로 클릭하면 해당 견적서가 열림
+  - ✅ 노션 Invoices DB에 `견적서 URL` 수식 속성을 추가했다(`"http://localhost:3000/invoice/" + id()`). `id()`는 하이픈 없는 32자리를 돌려준다. `NEXT_PUBLIC_SITE_URL`(기본 `http://localhost:3000`)과 수식의 사이트 URL이 같음을 확인했고, 배포 도메인이 정해지면 수식과 환경 변수를 함께 바꾼다(Task 013)
+  - ✅ 수락 기준: 노션에서 얻은 URL을 그대로 클릭하면 해당 견적서가 열림
   - 테스트 체크리스트 (Playwright MCP):
-    - 노션에서 복사한 URL로 이동 시 정상 표시
-    - 같은 견적서의 하이픈 포함·미포함 ID URL 모두 같은 견적서 표시 (D5·Task 003 결정 기준)
+    - ✅ 노션 수식이 만든 URL(`http://localhost:3000/invoice/4044512d22df80c899b5ffca83602b91`)로 이동 시 정상 표시 (탭 제목 `견적서 INV-2026-001`, 항목 3개)
+    - ✅ 같은 견적서의 하이픈 포함·미포함 ID URL 모두 같은 견적서 표시 (D5·Task 003 결정 기준)
 
 ### Phase 4: 최적화 및 배포
 
@@ -332,7 +357,7 @@ Task 004~006은 Task 003의 타입·더미 데이터만 있으면 Phase 3의 Tas
  ├─ 002 라우트·loading·error·404 골격 ✅
  └─ 003 타입·상수·더미 ✅
         ├─ [UI]   004 화면 · 005 상태 화면 · 006 PDF 레이아웃 ✅
-        └─ [로직] 007 노션 환경 ─ 008 조회 로직
-                                     └─ 009 페이지 연동 · 010 PDF API · 011 URL
+        └─ [로직] 007 노션 환경 ✅ ─ 008 조회 로직 ✅
+                                     └─ 009 페이지 연동 ✅ · 010 PDF API ✅ · 011 URL
                                                               └─ 012 최적화 · 013 배포 ─ 014 문서
 ```

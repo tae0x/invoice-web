@@ -21,12 +21,15 @@ src/app/
 ├─ layout.tsx                  루트 레이아웃 (폰트, 테마, 툴팁, 토스트)
 ├─ loading.tsx / error.tsx / global-error.tsx / not-found.tsx
 ├─ (marketing)/                헤더 + 푸터 레이아웃
-│  └─ page.tsx                 서비스 안내 홈 (/)
+│  └─ invoice/guide/page.tsx   서비스 안내 (/invoice/guide, `/`는 여기로 리디렉트)
+├─ api/generate-pdf/route.tsx  PDF 생성 Route Handler (POST, 견적서 ID만 받아 서버가 노션을 재조회, D2)
 └─ invoice/
    ├─ layout.tsx               견적서 전용 레이아웃 (헤더·푸터 없음, Container만 사용)
-   └─ [notionPageId]/          견적서 조회 (/invoice/[notionPageId])
-      ├─ page.tsx / loading.tsx / error.tsx / not-found.tsx
-      └─ _components/          견적서 전용 컴포넌트 (비공개 폴더)
+   ├─ [notionPageId]/          견적서 조회 (/invoice/[notionPageId])
+   │  ├─ page.tsx / loading.tsx / error.tsx / not-found.tsx
+   │  └─ _components/          견적서 전용 컴포넌트 (비공개 폴더)
+   └─ invalid-id/              형식이 틀린 ID의 정적 404 (proxy rewrite 대상, not-found.tsx는 위 404 화면 재사용)
+src/proxy.ts                   /invoice/:path* ID 형식 검사 → 형식 오류는 invalid-id로 rewrite (D12, 노션 조회 없음)
 ```
 
 ```
@@ -39,16 +42,18 @@ src/lib/
 ├─ constants.ts                상태 옵션·라벨, 로케일·통화·시간대 상수
 ├─ format.ts                   금액·날짜 포맷 유틸
 ├─ invoice-schema.ts           노션 페이지 ID zod 스키마
-├─ dummy-invoices.ts           UI 개발용 더미 데이터
-└─ notion/properties.ts        노션 속성명 매핑 상수 (서버 전용, types/notion.ts만 import type으로 참조)
+├─ pdf/                        PDF 생성 (서버 전용, `server-only`)
+│  ├─ fonts.ts / fonts/        Noto Sans KR 정적 TTF 등록
+│  ├─ invoice-document.tsx     A4 견적서 PDF 문서
+│  ├─ render-invoice-pdf.tsx   renderInvoicePdf(invoice) → Buffer
+│  └─ response-headers.ts      파일명 정리·Content-Disposition 등 응답 헤더
+└─ notion/                    노션 연동 (서버 전용, `server-only`. types/notion.ts만 properties.ts를 import type으로 참조)
+   ├─ properties.ts            노션 속성명 매핑 상수
+   ├─ env.ts                   NOTION_API_KEY·NOTION_DATABASE_ID 지연 검증 (zod)
+   ├─ client.ts                노션 클라이언트 싱글턴
+   ├─ mappers.ts               노션 속성 → 도메인 값 변환
+   └─ invoices.ts              getInvoice (견적서 + 항목 조회)
 ```
-
-## 예정된 구조 (미구현)
-
-PRD(`docs/PRD.md`)에 따라 아래 구조가 구현 단계에서 추가될 예정입니다. 구현 전이므로 현재는 존재하지 않습니다.
-
-- `src/app/api/generate-pdf/`: PDF 생성 Route Handler
-- `src/lib/notion/`: Notion 클라이언트와 데이터 조회 (서버 전용, Task 007·008). 현재는 속성명 매핑(`properties.ts`)만 있음
 
 ## 규칙
 
