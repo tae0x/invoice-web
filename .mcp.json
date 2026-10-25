@@ -3,9 +3,7 @@
     "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
+      "args": ["@playwright/mcp@latest"],
       "env": {}
     },
     "context7": {
@@ -15,18 +13,23 @@
     "sequential-thinking": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "env": {}
     },
     "shadcn": {
       "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "shrimp-task-manager": {
+      "command": "node",
       "args": [
-        "shadcn@latest",
-        "mcp"
-      ]
+        "/Users/t2222h/workspace/inflearn/gymcoding-claude-code/mcp-shrimp-task-manager/dist/index.js"
+      ],
+      "env": {
+        "DATA_DIR": "/Users/t2222h/workspace/inflearn/gymcoding-claude-code/courses/invoice-web/shrimp_data",
+        "TEMPLATES_USE": "en",
+        "ENABLE_GUI": "true"
+      }
     }
   }
 }
