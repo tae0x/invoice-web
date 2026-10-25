@@ -36,3 +36,12 @@ export type Invoice = {
   // 견적 항목 목록
   items: InvoiceItem[];
 };
+
+// 목록 행 (견적서에서 항목 목록만 뺀 값, D16)
+export type InvoiceListItem = Omit<Invoice, "items">;
+
+// 목록 조회 결과 (truncated: 행 상한에 걸려 일부만 담았는지 여부)
+export type InvoiceListResult = {
+  invoices: InvoiceListItem[];
+  truncated: boolean;
+};

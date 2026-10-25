@@ -3,7 +3,12 @@ import "server-only";
 import type { PageObjectResponse } from "@notionhq/client";
 
 import { TIME_ZONE, isInvoiceStatus } from "@/lib/constants";
-import type { Invoice, InvoiceItem, InvoiceStatus } from "@/types/invoices";
+import type {
+  Invoice,
+  InvoiceItem,
+  InvoiceListItem,
+  InvoiceStatus,
+} from "@/types/invoices";
 import type { NotionPageProperty, NotionPropertyOf } from "@/types/notion";
 
 import {
@@ -151,11 +156,9 @@ export function mapInvoiceItem(page: PageObjectResponse): InvoiceItem {
   };
 }
 
-// Invoices 페이지 + 항목 → 견적서 (총 금액은 노션 값을 그대로 쓴다, D6)
-export function mapInvoice(
-  page: PageObjectResponse,
-  items: InvoiceItem[],
-): Invoice {
+// Invoices 페이지 → 목록 행 (`항목` relation은 읽지 않는다, D16)
+// 총 금액은 노션 `총 금액` 값을 그대로 쓴다 (D6)
+export function mapInvoiceListItem(page: PageObjectResponse): InvoiceListItem {
   const { properties } = page;
   return {
     id: normalizeNotionId(page.id),
@@ -168,6 +171,13 @@ export function mapInvoice(
     validUntil: readDate(properties, NOTION_INVOICE_PROPERTIES.validUntil),
     status: readStatus(properties, NOTION_INVOICE_PROPERTIES.status),
     totalAmount: readNumber(properties, NOTION_INVOICE_PROPERTIES.totalAmount),
-    items,
   };
+}
+
+// Invoices 페이지 + 항목 → 견적서 (목록 행 매핑에 항목만 더한다)
+export function mapInvoice(
+  page: PageObjectResponse,
+  items: InvoiceItem[],
+): Invoice {
+  return { ...mapInvoiceListItem(page), items };
 }

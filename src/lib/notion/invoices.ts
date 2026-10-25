@@ -17,6 +17,7 @@ import type { Invoice } from "@/types/invoices";
 
 import { getNotionClient } from "./client";
 import { getNotionEnv } from "./env";
+import { NotionRequestError, toRequestError } from "./errors";
 import {
   mapInvoice,
   mapInvoiceItem,
@@ -31,44 +32,10 @@ import {
 // 노션 목록 API의 최대 page_size
 const NOTION_PAGE_SIZE = 100;
 
-// 화면·PDF API에 넘기는 오류. 노션 오류 메시지·응답 본문은 담지 않고 코드와 HTTP 상태만 남긴다
-class NotionRequestError extends Error {
-  constructor(
-    readonly code: string,
-    readonly status: number | null,
-  ) {
-    super(
-      `노션 견적서 조회에 실패했습니다 (code=${code}, status=${status ?? "-"})`,
-    );
-    this.name = "NotionRequestError";
-  }
-}
-
 // Invoices 데이터 소스 ID → Items 데이터 소스 ID
 // 스키마 정보라 요청 사이에 재사용한다 (견적서 데이터 캐시는 getCachedInvoice가 따로 맡는다, D8)
 // `항목` relation의 대상 DB를 바꾸면 서버를 재시작해야 반영된다
 const itemsDataSourceIds = new Map<string, string>();
-
-// 노션 SDK 오류와 내부 응답 검사 오류를 코드·상태만 담은 오류로 맞추고 서버 로그에 남긴다
-function toRequestError(error: unknown): unknown {
-  const requestError =
-    error instanceof NotionRequestError
-      ? error
-      : isNotionClientError(error)
-        ? new NotionRequestError(
-            error.code,
-            "status" in error ? error.status : null,
-          )
-        : null;
-  // 환경 변수 오류 등 그 밖의 오류는 그대로 넘긴다 (메시지에 값이 없음)
-  if (!requestError) return error;
-
-  logger.error("notion.invoice_fetch_failed", {
-    code: requestError.code,
-    status: requestError.status ?? undefined,
-  });
-  return requestError;
-}
 
 // 견적서 페이지 조회. 없는 페이지면 null (형식은 맞지만 페이지가 아닌 ID도 포함)
 async function retrieveInvoicePage(
@@ -253,7 +220,7 @@ export const getInvoice = cache(
     try {
       return await fetchInvoice(parsed.data);
     } catch (error) {
-      throw toRequestError(error);
+      throw toRequestError(error, "notion.invoice_fetch_failed");
     }
   },
 );
